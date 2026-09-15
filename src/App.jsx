@@ -1143,22 +1143,21 @@ export default function App() {
           className={driveMode ? "nav-drive active" : "nav-drive"}
           onClick={toggleDrive}
           aria-pressed={driveMode}
+          aria-label={driveMode ? "Return" : "Start"}
         >
-          <HeaderDriveIcon returning={driveMode} />
-          <span className="drive-copy">
-            <small>LOOP DRIVE</small>
-            <strong>{driveMode ? "RETURN / HERO" : "DRIVE LOOP"}</strong>
-          </span>
-          <b className="drive-chevron">{driveMode ? "↙" : "→"}</b>
+          <span className="nav-drive-led" aria-hidden="true" />
+          <strong>{driveMode ? "RETURN" : "START"}</strong>
         </button>
 
         <button
-          className="menu-button"
+          className={mobileMenu ? "menu-button active" : "menu-button"}
           onClick={() => setMobileMenu((value) => !value)}
-          aria-label="Toggle navigation"
+          aria-label={mobileMenu ? "Close navigation" : "Open navigation"}
+          aria-expanded={mobileMenu}
         >
-          <span />
-          <span />
+          <span className="menu-line menu-line-top" />
+          <span className="menu-line menu-line-mid" />
+          <span className="menu-line menu-line-bottom" />
         </button>
       </header>
 
@@ -1177,74 +1176,6 @@ export default function App() {
             <p>
               Tap the real 3D car to control wheels, doors, lights and engine. Activate DRIVE LOOP to watch it run left-to-right continuously, then return it to an oversized hero view.
             </p>
-            <div className="paint-lab">
-              <div className="paint-lab-head">
-                <span>METALLIC COLOR LAB</span>
-                <strong>
-                  {paintTone === "custom"
-                    ? `CUSTOM ${customPaint.toUpperCase()}`
-                    : PAINTS.find((paint) => paint.id === paintTone)?.name}
-                </strong>
-              </div>
-
-              <div className="swipe-shell paint-swipe-shell">
-                <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(paintRef, -1)} aria-label="Previous paint colours">‹</button>
-                <div className="paint-switch" ref={paintRef} aria-label="Metallic exterior colour presets">
-                {PAINTS.map((paint) => (
-                  <button
-                    key={paint.id}
-                    className={paintTone === paint.id ? "active" : ""}
-                    onClick={() => setPaintTone(paint.id)}
-                    title={paint.name}
-                    aria-label={`Paint ${paint.name}`}
-                  >
-                    <span
-                      className="paint-dot metallic-dot"
-                      style={{
-                        background: `linear-gradient(135deg, rgba(255,255,255,.72) 0%, ${paint.hex} 28%, ${paint.hex} 63%, rgba(0,0,0,.7) 100%)`,
-                      }}
-                    />
-                    <small>{paint.name}</small>
-                  </button>
-                ))}
-                </div>
-                <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(paintRef, 1)} aria-label="Next paint colours">›</button>
-              </div>
-
-              <div className={`custom-paint ${paintTone === "custom" ? "active" : ""}`}>
-                <div className="custom-paint-copy">
-                  <span>CUSTOM COLOR</span>
-                  <strong>CHOOSE ANY SHADE</strong>
-                  <small>Tap the wheel, select your colour and see it live on the 3D car.</small>
-                </div>
-
-                <label className="color-wheel-control" title="Choose a custom car colour">
-                  <input
-                    type="color"
-                    value={customPaint}
-                    onChange={(event) => {
-                      setCustomPaint(event.target.value);
-                      setPaintTone("custom");
-                    }}
-                    onClick={() => setPaintTone("custom")}
-                    aria-label="Choose custom exterior colour"
-                  />
-                  <span
-                    className="color-wheel-preview"
-                    style={{ background: customPaint }}
-                  />
-                  <b>COLOR WHEEL</b>
-                </label>
-
-                <button
-                  type="button"
-                  className="use-custom-paint"
-                  onClick={() => setPaintTone("custom")}
-                >
-                  USE CUSTOM
-                </button>
-              </div>
-            </div>
           </div>
 
           <div
@@ -1319,10 +1250,10 @@ export default function App() {
             >
               <span className="mini-part mini-drive" />
               <div>
-                <small>00 / LOOP MODE</small>
-                <strong>{driveMode ? "RETURN HERO" : "DRIVE LOOP"}</strong>
+                <small>DRIVING EXPERIENCE</small>
+                <strong>{driveMode ? "RETURN TO STUDIO" : "DRIVE THE CAR"}</strong>
               </div>
-              <em>{driveMode ? "FORWARD →" : "READY"}</em>
+              <em>{driveMode ? "LIVE DRIVE" : "START →"}</em>
             </button>
 
             <button
@@ -1331,8 +1262,8 @@ export default function App() {
             >
               <span className="mini-part mini-door" />
               <div>
-                <small>01 / BODY</small>
-                <strong>DOORS</strong>
+                <small>CABIN ACCESS</small>
+                <strong>{leftDoorOpen || rightDoorOpen ? "CLOSE DOORS" : "OPEN DOORS"}</strong>
               </div>
               <em>{leftDoorOpen || rightDoorOpen ? "OPEN" : "CLOSED"}</em>
             </button>
@@ -1343,8 +1274,8 @@ export default function App() {
             >
               <span className={`mini-part mini-wheel ${wheelsMoving ? "spin" : ""}`} />
               <div>
-                <small>02 / MOTION</small>
-                <strong>WHEELS</strong>
+                <small>WHEEL MOTION</small>
+                <strong>{wheelsMoving || driveMode ? "STOP WHEELS" : "SPIN WHEELS"}</strong>
               </div>
               <em>{wheelsMoving || driveMode ? "SPINNING" : "STOPPED"}</em>
             </button>
@@ -1355,8 +1286,8 @@ export default function App() {
             >
               <span className="mini-part mini-light" />
               <div>
-                <small>03 / VISION</small>
-                <strong>LIGHTS</strong>
+                <small>EXTERIOR LIGHTING</small>
+                <strong>{headlights ? "LIGHTS ON" : "LIGHTS OFF"}</strong>
               </div>
               <em>{headlights ? "ON" : "OFF"}</em>
             </button>
@@ -1367,8 +1298,8 @@ export default function App() {
             >
               <span className="mini-part mini-piston" />
               <div>
-                <small>04 / POWER</small>
-                <strong>ENGINE</strong>
+                <small>POWERTRAIN</small>
+                <strong>{engineOn ? "STOP ENGINE" : "START ENGINE"}</strong>
               </div>
               <em>{engineOn ? "RUNNING" : "OFF"}</em>
             </button>
@@ -1379,8 +1310,8 @@ export default function App() {
             >
               <span className="mini-part mini-panel" />
               <div>
-                <small>05 / ACCESS</small>
-                <strong>BONNET</strong>
+                <small>ENGINE BAY ACCESS</small>
+                <strong>{bonnetOpen ? "CLOSE HOOD" : "OPEN HOOD"}</strong>
               </div>
               <em>{capabilities.bonnet ? (bonnetOpen ? "OPEN" : "CLOSED") : "FUSED"}</em>
             </button>
@@ -1391,14 +1322,85 @@ export default function App() {
             >
               <span className="mini-part mini-panel rear" />
               <div>
-                <small>06 / ACCESS</small>
-                <strong>BOOT</strong>
+                <small>LUGGAGE ACCESS</small>
+                <strong>{bootOpen ? "CLOSE TRUNK" : "OPEN TRUNK"}</strong>
               </div>
               <em>{capabilities.boot ? (bootOpen ? "OPEN" : "CLOSED") : "FUSED"}</em>
             </button>
             </div>
             <button className="control-arrow control-arrow-right" onClick={() => scrollHeroControls(1)} aria-label="Next controls">→</button>
           </div>
+          <div className="hero-paint-dock">
+            <div className="paint-lab">
+              <div className="paint-lab-head">
+                <span>METALLIC COLOR LAB</span>
+                <strong>
+                  {paintTone === "custom"
+                    ? `CUSTOM ${customPaint.toUpperCase()}`
+                    : PAINTS.find((paint) => paint.id === paintTone)?.name}
+                </strong>
+              </div>
+
+              <div className="swipe-shell paint-swipe-shell">
+                <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(paintRef, -1)} aria-label="Previous paint colours">‹</button>
+                <div className="paint-switch" ref={paintRef} aria-label="Metallic exterior colour presets">
+                {PAINTS.map((paint) => (
+                  <button
+                    key={paint.id}
+                    className={paintTone === paint.id ? "active" : ""}
+                    onClick={() => setPaintTone(paint.id)}
+                    title={paint.name}
+                    aria-label={`Paint ${paint.name}`}
+                  >
+                    <span
+                      className="paint-dot metallic-dot"
+                      style={{
+                        background: `linear-gradient(135deg, rgba(255,255,255,.72) 0%, ${paint.hex} 28%, ${paint.hex} 63%, rgba(0,0,0,.7) 100%)`,
+                      }}
+                    />
+                    <small>{paint.name}</small>
+                  </button>
+                ))}
+                </div>
+                <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(paintRef, 1)} aria-label="Next paint colours">›</button>
+              </div>
+
+              <div className={`custom-paint ${paintTone === "custom" ? "active" : ""}`}>
+                <div className="custom-paint-copy">
+                  <span>CUSTOM COLOR</span>
+                  <strong>CHOOSE ANY SHADE</strong>
+                  <small>Tap the wheel, select your colour and see it live on the 3D car.</small>
+                </div>
+
+                <label className="color-wheel-control" title="Choose a custom car colour">
+                  <input
+                    type="color"
+                    value={customPaint}
+                    onChange={(event) => {
+                      setCustomPaint(event.target.value);
+                      setPaintTone("custom");
+                    }}
+                    onClick={() => setPaintTone("custom")}
+                    aria-label="Choose custom exterior colour"
+                  />
+                  <span
+                    className="color-wheel-preview"
+                    style={{ background: customPaint }}
+                  />
+                  <b>COLOR WHEEL</b>
+                </label>
+
+                <button
+                  type="button"
+                  className="use-custom-paint"
+                  onClick={() => setPaintTone("custom")}
+                >
+                  USE CUSTOM
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="hero-spec-strip">
             <div>
               <small>LIVE POWER</small>
