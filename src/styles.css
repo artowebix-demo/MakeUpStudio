@@ -6738,3 +6738,146 @@ avy/platinum */
   }
 }
 
+/* =========================================================
+   REQUESTED FINAL FIXES ONLY
+   1. Mobile light + hamburger stay on header right
+   2. Remove animated hero dots/grain
+   3. Swipe arrows belong to customization categories only
+   4. Remove non-working car overlay arrows
+   ========================================================= */
+
+/* Remove the animated dotted/grain overlay so the car stays clean and visible. */
+.garage-film-grain,
+.hero .garage-film-grain {
+  display: none !important;
+  animation: none !important;
+  background: none !important;
+}
+
+/* Remove any legacy car swipe-arrow overlay from older CSS/markup. */
+.car-swipe-cues,
+.car-swipe-arrow,
+.car-swipe-label {
+  display: none !important;
+}
+
+/* Category arrows are hidden by default; mobile enables them. */
+.mobile-category-swipe-wrap {
+  position: relative;
+}
+
+.mobile-category-arrow {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  /* Logo left, light + hamburger locked to the far right. */
+  .topbar {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .topbar .brand {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+    margin-right: auto !important;
+  }
+
+  .topbar .nav-actions {
+    margin-left: auto !important;
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 7px !important;
+    order: 3 !important;
+  }
+
+  .topbar .icon-button {
+    display: none !important;
+  }
+
+  .topbar .light-switch {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+  }
+
+  .topbar .light-switch b {
+    display: none !important;
+  }
+
+  .topbar .menu {
+    display: block !important;
+    flex: 0 0 42px !important;
+    margin: 0 !important;
+  }
+
+  /* Mobile navigation opens below the header, not between logo/actions. */
+  .topbar nav {
+    order: 4 !important;
+  }
+
+  /* Swipe affordance for WHAT DO YOU WANT TO CHANGE? */
+  body > .mobile-customizer .mobile-category-swipe-wrap {
+    position: relative !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+  }
+
+  body > .mobile-customizer .mobile-category-tabs {
+    position: relative !important;
+    z-index: 1 !important;
+    padding-left: 34px !important;
+    padding-right: 34px !important;
+    scroll-padding-inline: 34px;
+  }
+
+  body > .mobile-customizer .mobile-category-arrow {
+    position: absolute !important;
+    top: 50% !important;
+    z-index: 8 !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 27px !important;
+    height: 42px !important;
+    transform: translateY(-50%) !important;
+    border: 1px solid rgba(214, 40, 40, .72) !important;
+    border-radius: 8px !important;
+    background: rgba(8, 12, 16, .92) !important;
+    color: #D62828 !important;
+    font: 800 27px/1 var(--orbit) !important;
+    box-shadow:
+      0 0 16px rgba(214, 40, 40, .22),
+      inset 0 0 12px rgba(214, 40, 40, .06) !important;
+    pointer-events: none !important;
+  }
+
+  body > .mobile-customizer .mobile-category-arrow-left {
+    left: 3px !important;
+    animation: mobileCategoryCueLeft 1.35s ease-in-out infinite;
+  }
+
+  body > .mobile-customizer .mobile-category-arrow-right {
+    right: 3px !important;
+    animation: mobileCategoryCueRight 1.35s ease-in-out infinite;
+  }
+}
+
+@keyframes mobileCategoryCueLeft {
+  0%, 100% { transform: translateY(-50%) translateX(0); opacity: .62; }
+  50% { transform: translateY(-50%) translateX(-3px); opacity: 1; }
+}
+
+@keyframes mobileCategoryCueRight {
+  0%, 100% { transform: translateY(-50%) translateX(0); opacity: .62; }
+  50% { transform: translateY(-50%) translateX(3px); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-category-arrow {
+    animation: none !important;
+  }
+}
+

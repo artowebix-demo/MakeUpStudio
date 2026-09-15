@@ -1604,7 +1604,7 @@ export default function App() {
           <button className={`light-switch ${lightsOn ? "active" : ""}`} onClick={() => setLightsOn(v => !v)}>
             <span>☼</span><i /><b>{lightsOn ? "LIGHT ON" : "LIGHT OFF"}</b>
           </button>
-          <button className="menu" onClick={() => setMobileMenu(v => !v)} aria-label="Menu"><i/><i/><i/></button>
+          <button className={`menu ${mobileMenu ? "active" : ""}`} onClick={() => setMobileMenu(v => !v)} aria-label="Menu" aria-expanded={mobileMenu}><i/><i/><i/></button>
         </div>
       </header>
 
@@ -1612,7 +1612,6 @@ export default function App() {
         <section className={`hero ${mobileCustomizerOpen ? "mobile-editing" : ""}`} id="home">
           <div className="hero-studio realistic-workshop-overlay" aria-hidden="true">
             <div className="garage-vignette" />
-            <div className="garage-film-grain" />
             <div className="garage-bay-label">
               <span>PERFORMANCE ATELIER</span>
               <b>BAY 01</b>
@@ -1678,14 +1677,7 @@ export default function App() {
             </span>
             <span className="mobile-side-customize-arrow">›</span>
           </button>
-
-          <div className="car-swipe-cues" aria-hidden="true">
-            <span className="car-swipe-arrow car-swipe-left">‹</span>
-            <span className="car-swipe-label">SWIPE / DRAG</span>
-            <span className="car-swipe-arrow car-swipe-right">›</span>
-          </div>
-
-          <div
+<div
             className={`car-stage ${dragging ? "dragging" : ""}`}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -1864,6 +1856,8 @@ export default function App() {
               </button>
             </div>
 
+            <div className="mobile-category-swipe-wrap">
+              <span className="mobile-category-arrow mobile-category-arrow-left" aria-hidden="true">‹</span>
             <div className="mobile-category-tabs">
               {CATEGORIES.map(([id,icon,label]) => (
                 <button
@@ -1881,6 +1875,9 @@ export default function App() {
               <span>NOW EDITING</span>
               <strong>{CATEGORY_INFO[activeCategory].title}</strong>
               <i>CHANGES APPEAR LIVE</i>
+            </div>
+
+              <span className="mobile-category-arrow mobile-category-arrow-right" aria-hidden="true">›</span>
             </div>
 
             <div className="mobile-control-area">
