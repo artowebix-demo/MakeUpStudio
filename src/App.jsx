@@ -184,6 +184,14 @@ const FAQS = [
   ["Can I build in stages?", "Yes. Save the visual direction first, then split the real build into sensible stages."],
   ["Will it work on mobile?", "Yes. The configurator uses swipe-friendly controls, touch rotation and responsive panels."],
   ["Can the garage build around my budget?", "Yes. Start with the upgrades that create the biggest visual or driving improvement, then expand later."],
+  ["Can you help me choose the right wheel fitment?", "Yes. Wheel width, offset, tyre profile and practical clearance should be checked together before installation."],
+  ["Can I change the colour after saving a build?", "Yes. Reopen the configurator, change the visual direction and save the updated build on the same device."],
+  ["Do you install suspension and coilovers?", "Yes. Suspension upgrades can be planned around stance, road use, comfort and clearance requirements."],
+  ["Can I combine wheels, brakes and aero in one build?", "Yes. The goal is to plan the modifications as one connected package rather than unrelated individual parts."],
+  ["Do you offer carbon-fibre styling upgrades?", "Yes. Supported carbon and aero options can be previewed in the configurator and discussed as part of the final build."],
+  ["Can you help with a daily-driven car?", "Yes. A build can stay practical for daily use while improving stance, wheels, braking, lighting and visual finish."],
+  ["How do I start a build consultation?", "Use the WhatsApp build-support button and send your vehicle details, goals, preferred style and approximate budget."],
+  ["Can I use my saved 3D configuration as a reference?", "Yes. Your live configuration can be used as the visual starting point when discussing the real modification plan."],
 ];
 
 function Loader() {
@@ -1465,6 +1473,7 @@ export default function App() {
 
   const [toast, setToast] = useState("");
   const [faqOpen, setFaqOpen] = useState(0);
+  const [showAllFaqs, setShowAllFaqs] = useState(false);
 
   useEffect(() => {
     if (!toast) return;
@@ -1586,6 +1595,18 @@ export default function App() {
     };
   }, [mobileCustomizerOpen]);
 
+  useEffect(() => {
+    if (!mobileMenu) return;
+
+    const closeMenu = (event) => {
+      if (event.target.closest(".menu")) return;
+      setMobileMenu(false);
+    };
+
+    document.addEventListener("pointerdown", closeMenu);
+    return () => document.removeEventListener("pointerdown", closeMenu);
+  }, [mobileMenu]);
+
   return (
     <div className={`site ${lightsOn ? "lights-on" : "lights-off"} env-${environment}`}>
       {toast && <div className="toast">{toast}</div>}
@@ -1595,7 +1616,7 @@ export default function App() {
           <span className="brand-mark">⬡</span>
           <span><strong>DRIVE MODS</strong><small>CUSTOMIZE BEYOND LIMITS</small></span>
         </a>
-        <nav className={mobileMenu ? "open" : ""}>
+        <nav className={mobileMenu ? "open" : ""} onClick={() => setMobileMenu(false)}>
           <a href="#home">HOME</a><a href="#customize">CUSTOMIZE</a><a href="#packages">PACKAGES</a>
           <a href="#gallery">GALLERY</a><a href="#services">SERVICES</a><a href="#about">ABOUT</a><a href="#contact">CONTACT</a>
         </nav>
@@ -2131,8 +2152,29 @@ export default function App() {
         <section className="faq section scroll-reveal" data-scroll-reveal>
           <div className="section-head"><div><small>CLIENT QUESTIONS</small><h2>BEFORE YOU <span>MODIFY.</span></h2></div></div>
           <div className="faq-list">
-            {FAQS.map(([q,a],i) => <button key={q} className={faqOpen===i ? "open" : ""} onClick={() => setFaqOpen(faqOpen===i ? -1 : i)}><b>0{i+1}</b><span><strong>{q}</strong><p>{a}</p></span><i>{faqOpen===i ? "−" : "+"}</i></button>)}
+            {(showAllFaqs ? FAQS : FAQS.slice(0, 5)).map(([q,a],i) => (
+              <button
+                key={q}
+                className={faqOpen===i ? "open" : ""}
+                onClick={() => setFaqOpen(faqOpen===i ? -1 : i)}
+              >
+                <b>{String(i + 1).padStart(2, "0")}</b>
+                <span><strong>{q}</strong><p>{a}</p></span>
+                <i>{faqOpen===i ? "−" : "+"}</i>
+              </button>
+            ))}
           </div>
+          <button
+            type="button"
+            className="faq-load-more"
+            onClick={() => {
+              setShowAllFaqs(v => !v);
+              setFaqOpen(-1);
+            }}
+          >
+            {showAllFaqs ? "SHOW LESS" : `LOAD MORE QUESTIONS (${FAQS.length - 5})`}
+            <span>{showAllFaqs ? "↑" : "↓"}</span>
+          </button>
         </section>
 
         <section className="contact section" id="contact">
@@ -2150,9 +2192,12 @@ export default function App() {
         rel="noreferrer"
         aria-label="Chat with Drive Mods on WhatsApp"
       >
-        <span>WA</span>
+        <span className="whatsapp-logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32" role="img">
+            <path fill="currentColor" d="M16.02 3.2A12.7 12.7 0 0 0 5.28 22.7L3.6 28.8l6.25-1.64A12.72 12.72 0 1 0 16.02 3.2Zm0 22.96a10.2 10.2 0 0 1-5.2-1.43l-.37-.22-3.7.97.99-3.61-.24-.37a10.22 10.22 0 1 1 8.52 4.66Zm5.6-7.66c-.3-.15-1.8-.89-2.08-.99-.28-.1-.48-.15-.69.15-.2.31-.79.99-.97 1.19-.18.2-.36.23-.66.08-.31-.15-1.3-.48-2.47-1.52a9.24 9.24 0 0 1-1.71-2.13c-.18-.31-.02-.47.13-.62.14-.14.31-.36.46-.54.15-.18.2-.31.31-.51.1-.21.05-.39-.03-.54-.08-.15-.69-1.66-.94-2.27-.25-.6-.5-.52-.69-.53h-.58c-.2 0-.53.08-.81.39-.28.3-1.07 1.04-1.07 2.55s1.1 2.96 1.25 3.17c.15.2 2.16 3.3 5.23 4.63.73.31 1.3.5 1.75.64.74.23 1.4.2 1.93.12.59-.09 1.8-.74 2.06-1.45.25-.72.25-1.33.18-1.46-.08-.13-.28-.2-.59-.36Z"/>
+          </svg>
+        </span>
         <div><small>BUILD SUPPORT</small><strong>WHATSAPP US</strong></div>
-        <i>↗</i>
       </a>
 
       <footer>
