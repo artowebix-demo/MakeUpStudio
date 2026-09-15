@@ -5,22 +5,19 @@ import { ContactShadows, Environment, Html, RoundedBox, useGLTF, useProgress } f
 import * as THREE from "three";
 import "./styles.css";
 
-const CAR_MODEL_URL = `${import.meta.env.BASE_URL}models/car_Mistery_Porsche.glb`;
+const CAR_MODEL_URL = `${import.meta.env.BASE_URL}models/generic_sedan_car.glb`;
 
 const PAINTS = [
-  { id: "silver", name: "ARCTIC SILVER", hex: "#aeb3b6" },
-  { id: "white", name: "PORCELAIN", hex: "#e7e5df" },
-  { id: "black", name: "OBSIDIAN", hex: "#090a0b" },
-  { id: "graphite", name: "GRAPHITE", hex: "#34383d" },
-  { id: "sapphire", name: "SAPPHIRE", hex: "#153e94" },
-  { id: "navy", name: "MIDNIGHT BLUE", hex: "#101c36" },
-  { id: "crimson", name: "CRIMSON", hex: "#7e1422" },
-  { id: "racingred", name: "RACING RED", hex: "#a51618" },
-  { id: "forest", name: "FOREST", hex: "#163f31" },
-  { id: "emerald", name: "EMERALD", hex: "#07543e" },
-  { id: "copper", name: "COPPER", hex: "#8d472a" },
-  { id: "champagne", name: "CHAMPAGNE", hex: "#9a7b50" },
-  { id: "violet", name: "DEEP VIOLET", hex: "#402c62" },
+  { id: "black", name: "JET BLACK", hex: "#08090a" },
+  { id: "white", name: "PEARL WHITE", hex: "#ecebe6" },
+  { id: "grey", name: "NARDO GREY", hex: "#777d80" },
+  { id: "silver", name: "TITANIUM SILVER", hex: "#aeb3b6" },
+  { id: "red", name: "RACING RED", hex: "#a9151c" },
+  { id: "blue", name: "MIDNIGHT BLUE", hex: "#102a55" },
+  { id: "green", name: "BRITISH GREEN", hex: "#123c2c" },
+  { id: "orange", name: "SUNSET ORANGE", hex: "#b94d1d" },
+  { id: "champagne", name: "CHAMPAGNE", hex: "#9b805b" },
+  { id: "purple", name: "DEEP PURPLE", hex: "#3e2858" },
 ];
 
 const FINISHES = [
@@ -54,21 +51,23 @@ const CALIPERS = [
 ];
 
 const TINTS = [
-  { id: "clear", name: "CLEAR", opacity: .50 },
+  { id: "crystal", name: "CRYSTAL", opacity: .62 },
+  { id: "clear", name: "CLEAR", opacity: .52 },
+  { id: "light", name: "LIGHT SMOKE", opacity: .42 },
   { id: "smoke", name: "SMOKE", opacity: .32 },
-  { id: "dark", name: "DARK", opacity: .19 },
+  { id: "privacy", name: "PRIVACY", opacity: .24 },
+  { id: "dark", name: "DARK", opacity: .18 },
   { id: "limo", name: "LIMO", opacity: .10 },
+  { id: "blackout", name: "BLACKOUT", opacity: .055 },
 ];
 
 const CATEGORIES = [
   ["paint", "✦", "PAINT"],
   ["wheels", "◉", "WHEELS"],
   ["brakes", "◎", "BRAKES"],
-  ["suspension", "↕", "STANCE"],
-  ["aero", "◢", "AERO"],
   ["glass", "▱", "GLASS"],
-  ["carbon", "▥", "CARBON"],
-  ["lights", "☼", "LIGHTS"],
+  ["carbon", "◆", "CARBON"],
+  ["interior", "▣", "INTERIOR"],
 ];
 
 
@@ -93,7 +92,7 @@ const BUILD_PRESETS = [
     id: "street",
     name: "Street Performance",
     description: "Aggressive road-focused configuration.",
-    paint: "crimson", finish: "metallic", rim: "gunmetal",
+    paint: "red", finish: "metallic", rim: "gunmetal",
     caliper: "yellow", tint: "smoke", carbon: true,
     stance: .42, aero: { wing:true, lip:true, skirts:true, diffuser:true },
   },
@@ -101,29 +100,43 @@ const BUILD_PRESETS = [
     id: "luxury",
     name: "Grand Touring",
     description: "Premium finish with understated details.",
-    paint: "navy", finish: "pearl", rim: "silver",
+    paint: "blue", finish: "pearl", rim: "silver",
     caliper: "silver", tint: "smoke", carbon: false,
     stance: .14, aero: { wing:false, lip:false, skirts:false, diffuser:false },
   },
 ];
 
 const AERO_PRESETS = [
-  ["stock","Stock","Factory bodywork",{ wing:false, lip:false, skirts:false, diffuser:false }],
-  ["street","Street","Front lip + side skirts",{ wing:false, lip:true, skirts:true, diffuser:false }],
-  ["sport","Sport","Balanced full aero",{ wing:false, lip:true, skirts:true, diffuser:true }],
-  ["track","Track","Maximum visual aero",{ wing:true, lip:true, skirts:true, diffuser:true }],
+  ["stock","Stock","Factory bodywork",{ wing:false, lip:false, skirts:false, diffuser:false, splitter:false, canards:false }],
+  ["street","Street","Front lip + side skirts",{ wing:false, lip:true, skirts:true, diffuser:false, splitter:true, canards:false }],
+  ["sport","Sport","Balanced full aero",{ wing:false, lip:true, skirts:true, diffuser:true, splitter:true, canards:false }],
+  ["track","Track","Maximum visual aero",{ wing:true, lip:true, skirts:true, diffuser:true, splitter:true, canards:true }],
 ];
 
 const CATEGORY_INFO = {
-  paint:{title:"Body Colour",description:"Choose colour & finish",accent:"#C7A66B"},
-  wheels:{title:"Wheels",description:"Rim finish & wheel preview",accent:"#AEB7C0"},
-  brakes:{title:"Brake Calipers",description:"Add a performance accent",accent:"#B94D4D"},
-  suspension:{title:"Ride Height",description:"Adjust stance & steering",accent:"#8EA79A"},
-  aero:{title:"Aero Package",description:"Wing, lip, skirts & diffuser",accent:"#C1B6A4"},
-  glass:{title:"Window Tint",description:"Choose your tint level",accent:"#708696"},
-  carbon:{title:"Carbon Fibre",description:"Performance material finish",accent:"#5F6468"},
-  lights:{title:"Lighting",description:"Workshop & vehicle lighting",accent:"#E2C27B"},
+  paint:{title:"Paint",description:"Colour & paint finish",accent:"#C7A66B"},
+  wheels:{title:"Wheels",description:"Rim colour & size",accent:"#AEB7C0"},
+  brakes:{title:"Brakes",description:"Caliper colour & gloss",accent:"#B94D4D"},
+  glass:{title:"Glass",description:"Window tint level",accent:"#708696"},
+  lights:{title:"Lights",description:"Headlights & light colour",accent:"#E2C27B"},
+  suspension:{title:"Stance",description:"Ride height & steering",accent:"#8EA79A"},
+  aero:{title:"Aero",description:"Lip, skirts, diffuser & wing",accent:"#B87A55"},
+  carbon:{title:"Carbon",description:"Carbon finish & surface",accent:"#777777"},
+  interior:{title:"Interior",description:"Seats, dash, console & door panels",accent:"#9A6A4A"},
 };
+
+const INTERIOR_COLORS = [
+  { id:"black", name:"OBSIDIAN BLACK", hex:"#111214" },
+  { id:"charcoal", name:"CHARCOAL", hex:"#343638" },
+  { id:"ivory", name:"IVORY", hex:"#E8E0D2" },
+  { id:"cognac", name:"COGNAC", hex:"#9A542F" },
+  { id:"saddle", name:"SADDLE BROWN", hex:"#70452F" },
+  { id:"mocha", name:"MOCHA", hex:"#49352D" },
+  { id:"burgundy", name:"BURGUNDY", hex:"#651F2A" },
+  { id:"navy", name:"DEEP NAVY", hex:"#18273B" },
+  { id:"red", name:"RACING RED", hex:"#9E2026" },
+  { id:"stone", name:"STONE GREY", hex:"#8B8983" },
+];
 
 const UPGRADES = [
   ["01", "FORGED WHEELS", "UNSPRUNG MASS", "₹48,000", "◉"],
@@ -311,7 +324,7 @@ function PerformanceController({ lightsOn }) {
     gl.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
 
     gl.toneMapping = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = lightsOn ? 1.08 : .72;
+    gl.toneMappingExposure = 0.78;
     gl.outputColorSpace = THREE.SRGBColorSpace;
     gl.shadowMap.enabled = true;
     gl.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -322,8 +335,9 @@ function PerformanceController({ lightsOn }) {
 
 function CarModel({
   rotation, autoRotate, lightsOn, paintTone, customPaint, finish, rim, customRimColor,
-  caliper, customCaliperColor, tint, carbon, aero, stance, steering, wheelSpin, before,
-  lightColor, lightIntensity, paintGloss, metallicBoost, rimScale, caliperGloss, carbonFinish, beforeMode
+  caliper, customCaliperColor, tint, glassColor, carbon, aero, stance, steering, wheelSpin, before,
+  lightColor, lightIntensity, paintGloss, metallicBoost, rimScale, caliperGloss, carbonFinish,
+  beforeMode, openParts, interiorSettings, customInteriorColors
 }) {
   const group = useRef();
   const { scene } = useGLTF(CAR_MODEL_URL);
@@ -335,9 +349,14 @@ function CarModel({
   const glasses = useRef([]);
   const carbons = useRef([]);
   const emissives = useRef([]);
+  const interiorSeats = useRef([]);
+  const interiorDashboard = useRef([]);
+  const interiorConsole = useRef([]);
+  const interiorDoorPanels = useRef([]);
   const wheelRotators = useRef([]);
+  const wheelSpinAngle = useRef(0);
   const frontSteer = useRef([]);
-  const aeroObjects = useRef({});
+  const pivots = useRef({});
 
   useEffect(() => {
     paints.current = [];
@@ -347,39 +366,56 @@ function CarModel({
     glasses.current = [];
     carbons.current = [];
     emissives.current = [];
+    interiorSeats.current = [];
+    interiorDashboard.current = [];
+    interiorConsole.current = [];
+    interiorDoorPanels.current = [];
 
+    const ancestorNames = (obj) => {
+      const names = [];
+      let node = obj;
+      while (node) {
+        names.push(node.name || "");
+        node = node.parent;
+      }
+      return names.join(" ").toLowerCase();
+    };
+
+    // WHEELS ONLY — rotate the eight actual render meshes directly.
+    // The uploaded GLB geometry proves each wheel mesh is thin on local X
+    // and circular on Y/Z, so local X is the true axle/spin axis.
+    wheelSpinAngle.current = 0;
     wheelRotators.current = [
-      "bone_wheel_FL_rotation", "bone_wheel_FR_rotation",
-      "bone_wheel_BL_rotation", "bone_wheel_BR_rotation",
-    ].map(n => car.getObjectByName(n)).filter(Boolean);
+      "Object_241", "Object_243", // front left: tyre + rim
+      "Object_247", "Object_249", // front right: tyre + rim
+      "Object_253", "Object_255", // rear left: tyre + rim
+      "Object_259", "Object_261", // rear right: tyre + rim
+    ].map((name) => {
+      const node = car.getObjectByName(name);
+      return node ? {
+        node,
+        baseQuaternion: node.quaternion.clone(),
+      } : null;
+    }).filter(Boolean);
 
     frontSteer.current = [
-      "bone_wheel_FL_steer", "bone_wheel_FR_steer",
+      "DEF-Wheel.Ft.L_124", "DEF-Wheel.Ft.R_128",
     ].map(n => car.getObjectByName(n)).filter(Boolean);
-
-    aeroObjects.current = {
-      wing: car.getObjectByName("detach_wing_20"),
-      lip: car.getObjectByName("detach_lip_20"),
-      skirtL: car.getObjectByName("detach_skirt_L_5"),
-      skirtR: car.getObjectByName("detach_skirt_R_5"),
-      diffuser: car.getObjectByName("detach_diffuser_10"),
-    };
 
     car.traverse(obj => {
       if (!obj.isMesh) return;
       obj.castShadow = true;
       obj.receiveShadow = true;
-      const name = (obj.name || "").toLowerCase();
+
+      const hierarchy = ancestorNames(obj);
       const source = Array.isArray(obj.material) ? obj.material : [obj.material];
       const cloned = source.map(mat => {
         if (!mat) return mat;
         const m = mat.clone();
         const mn = (m.name || "").toLowerCase();
+        const context = `${hierarchy} ${mn}`;
 
-        if (mn.includes("carpaint") && !name.includes("wheel")) {
-          // The Porsche GLB car-paint texture contains baked colour information.
-          // Remove only the colour/emissive maps so selected swatches become the
-          // actual body colour. Keep normal/roughness detail for realism.
+        if (mn.includes("car_paint") || mn.includes("car paint") || mn.includes("carpaint")) {
           m.map = null;
           m.emissiveMap = null;
           if (m.emissive) m.emissive.set("#000000");
@@ -388,12 +424,13 @@ function CarModel({
           paints.current.push(m);
         }
 
-        // IMPORTANT: wheel meshes get their own clean PBR material response.
-        // We intentionally remove the GLB detail texture from rims because that
-        // texture is what was washing the wheels almost pure white in bright HDR.
-        const isRimMesh = name.includes("rims#") || name.startsWith("rims");
+        // Generic Sedan wheel meshes are named Object_243/Object_249/etc.
+        // Detecting the parent hierarchy makes wheel colour actually work.
+        const isRim = context.includes("generic-wheel");
+        const isTyre = context.includes("generic-tire");
+        const isCaliper = context.includes("brake-caliper");
 
-        if (isRimMesh) {
+        if (isRim) {
           m.map = null;
           m.normalMap = null;
           m.aoMap = null;
@@ -403,182 +440,309 @@ function CarModel({
           rims.current.push(m);
         }
 
-        // Keep the actual rim/spokes independently colourable, but darken any
-        // separate bright inner-wheel / brake-disc material that sits behind them.
-        // This intentionally excludes the rim and caliper materials.
-        const wheelContext = /wheel|rim|brake|disc|rotor|hub/.test(`${name} ${mn}`);
-        const innerPart = /disc|rotor|hub|inner|backplate|brake/.test(`${name} ${mn}`);
-        if (wheelContext && innerPart && !isRimMesh && !name.includes("caliper") && !mn.includes("caliper")) {
+        if (isCaliper) {
+          m.map = null;
+          m.emissiveMap = null;
+          calipers.current.push(m);
+        } else if (!isRim && !isTyre && /disc|rotor|hub|backplate/.test(context)) {
           wheelInners.current.push(m);
         }
 
-        if (name.includes("caliper") || mn.includes("calipers")) calipers.current.push(m);
-        if (mn.includes("glass") || name.startsWith("glass#")) glasses.current.push(m);
-        if (mn.includes("carbon") || name.includes("tiled_carbon")) carbons.current.push(m);
-        if (mn.includes("emissive") || name.includes("emissive")) emissives.current.push(m);
+        if (mn.includes("glass") || context.includes("window-glass") || context.includes("glass_ext")) glasses.current.push(m);
+        if (mn.includes("carbon") || context.includes("carbon") || /side-mirror-trim|bumper-front-grill-frame|wheel-fender/.test(context)) carbons.current.push(m);
+
+        // The model does not use obvious emissive material names for every lamp,
+        // so detect the real headlight/taillight hierarchy too.
+        if (/headlight|taillight|drl|projector|led/.test(context) && !context.includes("cover") && !context.includes("trim")) {
+          emissives.current.push(m);
+        }
+
+        // INTERIOR — exact render-mesh targeting from this GLB.
+        // Do not infer these zones from parent/hierarchy names: target the
+        // actual Object_* render meshes exported by the model. Each material
+        // has already been cloned above, so the four zones stay independent.
+        const isInteriorMaterial = mn === "interior" || mn.startsWith("interior.");
+        const meshName = obj.name || "";
+
+        const SEAT_MESHES = new Set([
+          "Object_83",  // front seat
+          "Object_85",  // front seat backrest
+          "Object_87",  // passenger backrest
+          "Object_89",  // passenger seat
+          "Object_129", // rear seat
+          "Object_131", // rear seat backrest
+        ]);
+
+        const DASHBOARD_MESHES = new Set(["Object_33"]);
+        const CONSOLE_MESHES = new Set(["Object_29"]);
+        const DOOR_PANEL_MESHES = new Set([
+          "Object_35", // front-left interior door panel
+          "Object_37", // front-right interior door panel
+          "Object_47", // rear-left interior door panel
+          "Object_49", // rear-right interior door panel
+        ]);
+
+        if (isInteriorMaterial) {
+          const isSeat = SEAT_MESHES.has(meshName);
+          const isDashboard = DASHBOARD_MESHES.has(meshName);
+          const isConsole = CONSOLE_MESHES.has(meshName);
+          const isDoorPanel = DOOR_PANEL_MESHES.has(meshName);
+
+          if (isSeat || isDashboard || isConsole || isDoorPanel) {
+            // The GLB's shared `interior` material contains a dark base-colour
+            // texture. That texture multiplies the selected colour and can make
+            // colour changes appear to do nothing. Remove ONLY the base-colour
+            // map on these exact meshes; keep normal/AO detail intact.
+            m.map = null;
+            if (m.emissive) m.emissive.set("#000000");
+            m.emissiveIntensity = 0;
+            m.needsUpdate = true;
+          }
+
+          if (isSeat) interiorSeats.current.push(m);
+          else if (isDashboard) interiorDashboard.current.push(m);
+          else if (isConsole) interiorConsole.current.push(m);
+          else if (isDoorPanel) interiorDoorPanels.current.push(m);
+        }
+
         return m;
       });
       obj.material = Array.isArray(obj.material) ? cloned : cloned[0];
     });
+
+    // Exact hinge positions measured from the uploaded Generic Sedan GLB.
+    // The model has baked panel geometry, so generic Box3 centres are NOT the
+    // physical hinge lines. These coordinates are in car.Body local space.
+    const body = car.getObjectByName("car.Body_119") || car;
+
+    const makeExactPivot = (key, names, hinge) => {
+      const parts = names.map((name) => car.getObjectByName(name)).filter(Boolean);
+      if (!parts.length) return null;
+
+      car.updateMatrixWorld(true);
+      body.updateMatrixWorld(true);
+
+      const pivot = new THREE.Group();
+      pivot.name = `drive-mods-pivot-${key}`;
+      pivot.position.set(hinge[0], hinge[1], hinge[2]);
+      body.add(pivot);
+      body.updateMatrixWorld(true);
+
+      // attach() keeps every panel exactly where the GLB exported it while
+      // moving its rotation origin to the real hinge line.
+      parts.forEach((part) => pivot.attach(part));
+      return pivot;
+    };
+
+    pivots.current = {
+      frontL: makeExactPivot("front-left", [
+        "door-front-l_16", "door-front-interior-panel-l_14", "door-front-window-glass-l_18"
+      ], [0.81808, 0.66074, 1.19870]),
+
+      frontR: makeExactPivot("front-right", [
+        "door-front-r_17", "door-front-interior-panel-r_15", "door-front-window-glass-r_19"
+      ], [-0.81808, 0.66074, 1.19870]),
+
+      rearL: makeExactPivot("rear-left", [
+        "door-rear-l_22", "door-rear-interior-panel-l_20", "door-rear-window-glass-l_26", "door-rear-trim-glass-l_24"
+      ], [0.91128, 0.54214, -0.07985]),
+
+      rearR: makeExactPivot("rear-right", [
+        "door-rear-r_23", "door-rear-interior-panel-r_21", "door-rear-window-glass-r_27", "door-rear-trim-glass-r_25"
+      ], [-0.91246, 0.51675, -0.08060]),
+
+      hood: makeExactPivot("hood", ["hood_60"], [0, 1.01697, 1.14677]),
+
+      trunk: makeExactPivot("trunk", [
+        "trunk_99", "taillight-back-trunk-02-l_83", "taillight-back-trunk-02-r_84",
+        "taillight-lens-trunk-l_90", "taillight-lens-trunk-r_91"
+      ], [0, 1.00821, -1.77706]),
+    };
   }, [car]);
 
   useEffect(() => {
-    const color = before
-      ? "#6f7478"
-      : paintTone === "custom"
-        ? customPaint
-        : PAINTS.find(x => x.id === paintTone)?.hex || "#0f2fa8";
+    const color = before ? "#6f7478" : paintTone === "custom" ? customPaint : PAINTS.find(x => x.id === paintTone)?.hex || "#0f2fa8";
     const f = before ? FINISHES[0] : FINISHES.find(x => x.id === finish) || FINISHES[1];
-
     paints.current.forEach(m => {
       m.color?.set(color);
       m.metalness = beforeMode ? .58 : THREE.MathUtils.clamp(f.metalness * (.55 + metallicBoost), 0, 1);
       m.roughness = f.roughness;
       if ("clearcoat" in m) m.clearcoat = beforeMode ? .82 : THREE.MathUtils.clamp(f.clearcoat * (.35 + paintGloss), 0, 1);
       if ("clearcoatRoughness" in m) m.clearcoatRoughness = f.id === "matte" ? .58 : .045;
-      if ("envMapIntensity" in m) m.envMapIntensity = lightsOn ? 1.35 : .62;
-      if ("sheen" in m) m.sheen = 0;
+      if ("envMapIntensity" in m) m.envMapIntensity = 1.65;
       m.needsUpdate = true;
     });
-  }, [paintTone, customPaint, finish, before, lightsOn]);
+  }, [paintTone, customPaint, finish, before, lightsOn, beforeMode, metallicBoost, paintGloss]);
 
   useEffect(() => {
-    const r = before
-      ? RIMS[0]
-      : rim === "custom"
-        ? { id: "custom", name: "CUSTOM", hex: customRimColor, metalness: .58, roughness: .40, env: .22 }
-        : (RIMS.find(x => x.id === rim) || RIMS[0]);
+    const colourFor = (zone) => {
+      const choice = interiorSettings?.[zone] || "black";
+      return choice === "custom"
+        ? (customInteriorColors?.[zone] || "#111214")
+        : INTERIOR_COLORS.find((x) => x.id === choice)?.hex || "#111214";
+    };
+
+    const applyInteriorColour = (materials, colour) => {
+      materials.forEach((m) => {
+        m.color?.set(colour);
+        if ("roughness" in m) m.roughness = .58;
+        if ("metalness" in m) m.metalness = .04;
+        if ("envMapIntensity" in m) m.envMapIntensity = .72;
+        m.needsUpdate = true;
+      });
+    };
+
+    applyInteriorColour(interiorSeats.current, colourFor("seats"));
+    applyInteriorColour(interiorDashboard.current, colourFor("dashboard"));
+    applyInteriorColour(interiorConsole.current, colourFor("console"));
+    applyInteriorColour(interiorDoorPanels.current, colourFor("doors"));
+  }, [interiorSettings, customInteriorColors]);
+
+  useEffect(() => {
+    const r = before ? RIMS[0] : rim === "custom"
+      ? { hex: customRimColor, metalness: .72, roughness: .28, env: 1.15 }
+      : (RIMS.find(x => x.id === rim) || RIMS[0]);
     rims.current.forEach(m => {
       m.color?.set(r.hex);
       m.metalness = r.metalness;
       m.roughness = r.roughness;
-      if ("envMapIntensity" in m) m.envMapIntensity = r.env;
-      if ("clearcoat" in m) m.clearcoat = .05;
-      if ("clearcoatRoughness" in m) m.clearcoatRoughness = .65;
+      if ("envMapIntensity" in m) m.envMapIntensity = Math.max(r.env || .6, .75);
+      if ("clearcoat" in m) m.clearcoat = .35;
+      if ("clearcoatRoughness" in m) m.clearcoatRoughness = .18;
       m.needsUpdate = true;
     });
 
-    // Dark inner wheel hardware: removes the distracting white area while
-    // leaving rims.current untouched, so all rim presets + custom colour work.
     wheelInners.current.forEach(m => {
       m.map = null;
-      m.emissiveMap = null;
-      if (m.emissive) m.emissive.set("#000000");
-      m.emissiveIntensity = 0;
-      m.color?.set("#16191d");
+      m.color?.set("#17191c");
       m.metalness = .72;
-      m.roughness = .42;
-      if ("envMapIntensity" in m) m.envMapIntensity = .22;
-      if ("clearcoat" in m) m.clearcoat = .04;
+      m.roughness = .4;
       m.needsUpdate = true;
     });
 
-    const c = before
-      ? "#343638"
-      : caliper === "custom"
-        ? customCaliperColor
-        : (CALIPERS.find(x => x.id === caliper)?.hex || "#d4141d");
+    const c = before ? "#343638" : caliper === "custom" ? customCaliperColor : (CALIPERS.find(x => x.id === caliper)?.hex || "#d4141d");
     calipers.current.forEach(m => {
       m.color?.set(c);
       m.metalness = .38;
-      m.roughness = .36;
-      if ("envMapIntensity" in m) m.envMapIntensity = .35;
+      m.roughness = THREE.MathUtils.lerp(.56, .14, caliperGloss);
+      if ("clearcoat" in m) m.clearcoat = caliperGloss;
+      if ("envMapIntensity" in m) m.envMapIntensity = .8;
       m.needsUpdate = true;
     });
-  }, [rim, caliper, customRimColor, customCaliperColor, before]);
+  }, [rim, caliper, customRimColor, customCaliperColor, before, caliperGloss]);
 
   useEffect(() => {
     const t = before ? TINTS[0] : TINTS.find(x => x.id === tint) || TINTS[1];
     glasses.current.forEach(m => {
       m.transparent = true;
       m.opacity = t.opacity;
-      m.color?.set(before ? "#a8b2b7" : "#152027");
-      m.roughness = .08;
+      m.color?.set(before ? "#a8b2b7" : glassColor);
+      m.roughness = .05;
       m.metalness = .02;
+      if ("envMapIntensity" in m) m.envMapIntensity = 1.35;
       m.needsUpdate = true;
     });
-  }, [tint, before]);
+  }, [tint, before, glassColor]);
 
   useEffect(() => {
     carbons.current.forEach(m => {
       m.color?.set(before || !carbon ? "#55595d" : "#111315");
       m.metalness = before || !carbon ? .32 : .68;
-      m.roughness = before || !carbon ? .45 : .24;
-      if ("envMapIntensity" in m) m.envMapIntensity = lightsOn ? .55 : .3;
+      m.roughness = carbonFinish === "gloss" ? .16 : carbonFinish === "satin" ? .42 : .31;
+      if ("clearcoat" in m) m.clearcoat = carbonFinish === "gloss" ? 1 : .35;
       m.needsUpdate = true;
     });
-  }, [carbon, before, lightsOn]);
-
-  useEffect(() => {
-    Object.entries(aeroObjects.current).forEach(([key, obj]) => {
-      if (!obj) return;
-      if (before) obj.visible = false;
-      else if (key === "skirtL" || key === "skirtR") obj.visible = aero.skirts;
-      else obj.visible = !!aero[key];
-    });
-  }, [aero, before]);
+  }, [carbon, before, carbonFinish]);
 
   useEffect(() => {
     emissives.current.forEach(m => {
       if (!m.emissive) return;
-      m.emissive.set(lightsOn ? "#fff0b8" : "#1c1b18");
-      m.emissiveIntensity = lightsOn ? 3.6 : .08;
+      m.emissive.set(lightsOn ? lightColor : "#090909");
+      m.emissiveIntensity = lightsOn ? 4.8 * lightIntensity : .02;
       m.needsUpdate = true;
     });
-  }, [lightsOn]);
-
-  useEffect(() => {
-    car.traverse((obj) => {
-      if (!obj.isMesh || !obj.material) return;
-      const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-      materials.forEach((mat) => {
-        const n = `${obj.name} ${mat.name || ""}`.toLowerCase();
-
-        if (n.includes("caliper") || n.includes("brake")) {
-          mat.roughness = beforeMode ? .34 : THREE.MathUtils.lerp(.62, .12, caliperGloss);
-          if ("clearcoat" in mat) mat.clearcoat = beforeMode ? .45 : caliperGloss;
-          mat.needsUpdate = true;
-        }
-
-        if (carbon && (n.includes("carbon") || n.includes("cf_"))) {
-          if (carbonFinish === "gloss") {
-            mat.roughness = .16;
-            if ("clearcoat" in mat) mat.clearcoat = 1;
-          } else if (carbonFinish === "satin") {
-            mat.roughness = .42;
-            if ("clearcoat" in mat) mat.clearcoat = .28;
-          } else {
-            mat.roughness = .31;
-            if ("clearcoat" in mat) mat.clearcoat = .52;
-          }
-          mat.needsUpdate = true;
-        }
-      });
-    });
-  }, [car, caliperGloss, carbon, carbonFinish, beforeMode]);
+  }, [lightsOn, lightColor, lightIntensity]);
 
   useFrame((state, delta) => {
     if (!group.current) return;
-    group.current.rotation.y = THREE.MathUtils.lerp(
-      group.current.rotation.y,
-      rotation + (autoRotate ? state.clock.elapsedTime * .035 : 0),
-      .08
-    );
+    group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, rotation + (autoRotate ? state.clock.elapsedTime * .035 : 0), .08);
     const drop = before ? 0 : stance * .16;
     group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -1.08 - drop, .1);
 
-    const steer = THREE.MathUtils.degToRad((before ? 0 : steering) * 24);
-    frontSteer.current.forEach(b => b.rotation.y = THREE.MathUtils.lerp(b.rotation.y, steer, .12));
-    if (wheelSpin) wheelRotators.current.forEach(w => w.rotation.x -= delta * 6.5);
+    // Openable body panels. Angles are deliberately conservative so panels do
+    // not clip through the body on desktop or mobile.
+    const p = pivots.current;
+    if (p.frontL) p.frontL.rotation.y = THREE.MathUtils.damp(p.frontL.rotation.y, openParts?.frontL ? -1.02 : 0, 8, delta);
+    if (p.frontR) p.frontR.rotation.y = THREE.MathUtils.damp(p.frontR.rotation.y, openParts?.frontR ? 1.02 : 0, 8, delta);
+    if (p.rearL) p.rearL.rotation.y = THREE.MathUtils.damp(p.rearL.rotation.y, openParts?.rearL ? -1.0 : 0, 8, delta);
+    if (p.rearR) p.rearR.rotation.y = THREE.MathUtils.damp(p.rearR.rotation.y, openParts?.rearR ? 1.0 : 0, 8, delta);
+    if (p.hood) p.hood.rotation.x = THREE.MathUtils.damp(p.hood.rotation.x, openParts?.hood ? -1.0 : 0, 7, delta);
+    if (p.trunk) p.trunk.rotation.x = THREE.MathUtils.damp(p.trunk.rotation.x, openParts?.trunk ? .92 : 0, 7, delta);
+
+    const steer = THREE.MathUtils.degToRad((before ? 0 : steering) * 20);
+    frontSteer.current.forEach(w => w.rotation.y = THREE.MathUtils.damp(w.rotation.y, steer, 7, delta));
+
+    // WHEELS ONLY — spin the actual tyre/rim render meshes around LOCAL X.
+    // Nothing is re-parented, so steering, doors and every body panel stay untouched.
+    if (wheelSpin) wheelSpinAngle.current -= delta * 10.5;
+    const spinQ = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(1, 0, 0),
+      wheelSpinAngle.current
+    );
+    wheelRotators.current.forEach(({ node, baseQuaternion }) => {
+      node.quaternion.copy(baseQuaternion).multiply(spinQ);
+    });
   });
 
   return (
     <group ref={group} position={[0, -0.48, 0]} scale={1.38}>
       <primitive object={car} />
+
+      {/* Procedural aero kit. The downloaded sedan has no dedicated lip/skirts/
+          diffuser/wing meshes, so these lightweight parts make every aero
+          control visibly functional without touching the original body. */}
+      {!before && (
+        <group>
+          {aero?.lip && (
+            <mesh position={[0, -0.62, 2.77]} rotation={[0, 0, 0]} castShadow>
+              <boxGeometry args={[1.72, .075, .34]} />
+              <meshPhysicalMaterial color={carbon ? "#101214" : "#17191c"} metalness={carbon ? .62 : .35} roughness={carbonFinish === "gloss" ? .16 : .34} clearcoat={carbon ? .9 : .35} />
+            </mesh>
+          )}
+          {aero?.splitter && (
+            <mesh position={[0, -0.69, 2.88]} castShadow>
+              <boxGeometry args={[1.94, .035, .52]} />
+              <meshPhysicalMaterial color="#0c0d0f" metalness={.5} roughness={.2} clearcoat={.75} />
+            </mesh>
+          )}
+          {aero?.skirts && (<>
+            <mesh position={[.93, -0.63, .05]} castShadow><boxGeometry args={[.10, .10, 3.75]} /><meshPhysicalMaterial color={carbon ? "#101214" : "#191b1e"} metalness={.5} roughness={.24} clearcoat={.7} /></mesh>
+            <mesh position={[-.93, -0.63, .05]} castShadow><boxGeometry args={[.10, .10, 3.75]} /><meshPhysicalMaterial color={carbon ? "#101214" : "#191b1e"} metalness={.5} roughness={.24} clearcoat={.7} /></mesh>
+          </>)}
+          {aero?.diffuser && (
+            <group position={[0, -0.55, -2.68]}>
+              <mesh castShadow><boxGeometry args={[1.72, .22, .34]} /><meshPhysicalMaterial color={carbon ? "#0d0f10" : "#17191c"} metalness={.48} roughness={.26} clearcoat={.55} /></mesh>
+              {[-.55,-.28,0,.28,.55].map(x => <mesh key={x} position={[x,-.12,-.08]}><boxGeometry args={[.035,.25,.36]} /><meshStandardMaterial color="#08090a" roughness={.38} /></mesh>)}
+            </group>
+          )}
+          {aero?.wing && (
+            <group position={[0, .72, -2.18]}>
+              <mesh position={[0,.20,0]} castShadow><boxGeometry args={[1.78,.075,.34]} /><meshPhysicalMaterial color={carbon ? "#0d0f10" : "#17191c"} metalness={.5} roughness={.2} clearcoat={.8} /></mesh>
+              <mesh position={[.58,0,0]}><boxGeometry args={[.055,.42,.10]} /><meshStandardMaterial color="#111315" metalness={.45} roughness={.28} /></mesh>
+              <mesh position={[-.58,0,0]}><boxGeometry args={[.055,.42,.10]} /><meshStandardMaterial color="#111315" metalness={.45} roughness={.28} /></mesh>
+            </group>
+          )}
+          {aero?.canards && (<>
+            <mesh position={[.88,-.36,2.57]} rotation={[0,.35,.12]}><boxGeometry args={[.34,.035,.20]} /><meshStandardMaterial color="#0d0f10" metalness={.5} roughness={.22} /></mesh>
+            <mesh position={[-.88,-.36,2.57]} rotation={[0,-.35,-.12]}><boxGeometry args={[.34,.035,.20]} /><meshStandardMaterial color="#0d0f10" metalness={.5} roughness={.22} /></mesh>
+          </>)}
+        </group>
+      )}
+
       {lightsOn && (
         <>
-          <pointLight position={[.8, .65, 2.7]} intensity={7 * lightIntensity} distance={7} color={lightColor} />
-          <pointLight position={[-.8, .65, 2.7]} intensity={7 * lightIntensity} distance={7} color={lightColor} />
+          <pointLight position={[.72, .55, 3.15]} intensity={6 * lightIntensity} distance={8} color={lightColor} />
+          <pointLight position={[-.72, .55, 3.15]} intensity={6 * lightIntensity} distance={8} color={lightColor} />
         </>
       )}
     </group>
@@ -859,60 +1023,48 @@ function GarageEnvironment({ lightsOn }) {
 function StudioScene(props) {
   return (
     <>
-      <CameraRig view={props.view} zoom={props.zoom} />
+      <CameraRig view="360" zoom={props.zoom} mobileCustomizerOpen={props.mobileCustomizerOpen} />
 
-      <ambientLight intensity={props.lightsOn ? .42 : .12} />
-      <hemisphereLight
-        intensity={props.lightsOn ? .78 : .18}
-        color="#f6ead1"
-        groundColor="#07090b"
-      />
-
-      <directionalLight
-        castShadow
-        position={[5.8, 8.5, 6.5]}
-        intensity={props.lightsOn ? 3.4 : .65}
-        color="#fff3d8"
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-bias={-.00015}
-      />
-
-      <directionalLight
-        position={[-6, 4.2, 1]}
-        intensity={props.lightsOn ? 1.45 : .28}
-        color="#b8d4e8"
-      />
-
-      <spotLight
-        castShadow
-        position={[0, 7, 3.5]}
-        angle={.62}
-        penumbra={.72}
-        intensity={props.lightsOn ? 13 : 1.8}
-        distance={15}
-        decay={2}
-        color="#fff0cf"
-      />
-
-      <spotLight
-        position={[-5.5, 4.2, -1.5]}
-        angle={.55}
-        penumbra={.8}
-        intensity={props.lightsOn ? 5 : .7}
-        distance={11}
-        color="#d7aa49"
-      />
-
-      <GarageEnvironment lightsOn={props.lightsOn} />
-
+      {/* Real HDR environment: the warehouse preset is photographic HDRI,
+          so reflections on paint, glass and metal look far more natural. */}
       <Suspense fallback={<Loader />}>
-        <CarModel {...props} />
         <Environment
-          preset="apartment"
-          environmentIntensity={props.lightsOn ? 1.12 : .40}
+          preset="warehouse"
+          background
+          blur={0.02}
+          environmentIntensity={0.92}
         />
+        <CarModel {...props} />
       </Suspense>
+
+      {/* Shadow-catching workshop floor keeps the car planted in the HDR scene. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.10, 0]} receiveShadow>
+        <planeGeometry args={[28, 28]} />
+        <meshPhysicalMaterial
+          color="#202225"
+          roughness={.32}
+          metalness={.22}
+          clearcoat={.34}
+          clearcoatRoughness={.32}
+          envMapIntensity={1.15}
+        />
+      </mesh>
+
+      <ContactShadows
+        position={[0, -1.075, 0]}
+        opacity={.64}
+        scale={10}
+        blur={2.1}
+        far={4}
+        resolution={512}
+        color="#000000"
+      />
+
+      {/* Soft automotive-photo lighting, layered over the HDRI. */}
+      <ambientLight intensity={.12} />
+      <directionalLight castShadow position={[5.8, 8.5, 6.5]} intensity={1.35} color="#fff7e9" />
+      <directionalLight position={[-6, 4.2, 1]} intensity={.48} color="#c8dcf0" />
+      <spotLight position={[0, 7, 3.5]} angle={.62} penumbra={.8} intensity={3.1} distance={15} decay={2} color="#fff4df" />
     </>
   );
 }
@@ -920,7 +1072,7 @@ function StudioScene(props) {
 function ModPanel({
   active, paintTone, setPaintTone, customPaint, setCustomPaint, finish, setFinish,
   rim, setRim, customRimColor, setCustomRimColor, caliper, setCaliper,
-  customCaliperColor, setCustomCaliperColor, tint, setTint, carbon, setCarbon,
+  customCaliperColor, setCustomCaliperColor, tint, setTint, glassColor, setGlassColor, carbon, setCarbon,
   aero, setAero, stance, setStance, steering, setSteering, lightsOn, setLightsOn,
   wheelSpin, setWheelSpin, activate,
   lightColor, setLightColor, lightIntensity, setLightIntensity,
@@ -928,9 +1080,11 @@ function ModPanel({
   rimScale, setRimScale, caliperGloss, setCaliperGloss,
   carbonFinish, setCarbonFinish, demoMode, setDemoMode,
   beforeMode, setBeforeMode, activePreset, applyBuildPreset, applyAeroPreset,
-  mobileCustomizerOpen,
+  mobileCustomizerOpen, openParts, setOpenParts,
+  interiorSettings, setInteriorSettings, customInteriorColors, setCustomInteriorColors,
 }) {
   const info = CATEGORY_INFO[active];
+  const [interiorZone, setInteriorZone] = useState("seats");
 
   const ChoiceHeader = ({ title, text }) => (
     <div className="step2-section-head">
@@ -1044,6 +1198,85 @@ function ModPanel({
             <strong>{selectedPaint?.name} · {FINISHES.find((x) => x.id === finish)?.name}</strong>
           </div>
           <b>LIVE</b>
+        </div>
+      </div>
+    );
+  }
+
+  if (active === "interior") {
+    const zones = [
+      ["seats", "SEATS", "Front + rear seats & backrests"],
+      ["dashboard", "DASHBOARD", "Dashboard trim surfaces"],
+      ["console", "CENTER CONSOLE", "Center console trim"],
+      ["doors", "DOOR PANELS", "All four interior door panels"],
+    ];
+    const selectedChoice = interiorSettings[interiorZone];
+    const customColour = customInteriorColors[interiorZone];
+
+    const chooseInteriorColour = (choice) => {
+      setInteriorSettings((prev) => ({ ...prev, [interiorZone]: choice }));
+      activate();
+    };
+
+    return (
+      <div className="mod-panel simple-step-panel interior-panel">
+        <ChoiceHeader
+          title="Choose an interior area"
+          text="Seats, dashboard, center console and door panels can each use a different colour."
+        />
+
+        <div className="interior-zone-tabs">
+          {zones.map(([id, label, text]) => (
+            <button
+              key={id}
+              className={interiorZone === id ? "active" : ""}
+              onClick={() => setInteriorZone(id)}
+            >
+              <strong>{label}</strong>
+              <small>{text}</small>
+            </button>
+          ))}
+        </div>
+
+        <ChoiceHeader
+          title={`Choose ${zones.find(([id]) => id === interiorZone)?.[1].toLowerCase()} colour`}
+          text="This colour applies only to the selected interior area. Screens and LEDs stay unchanged."
+        />
+
+        <div className="visual-colour-grid interior-colour-grid">
+          {INTERIOR_COLORS.slice(0, 9).map((x) => (
+            <button
+              key={x.id}
+              className={`visual-colour-card ${selectedChoice === x.id ? "active" : ""}`}
+              onClick={() => chooseInteriorColour(x.id)}
+            >
+              <span className="colour-disc" style={{ background: x.hex }} />
+              <span className="choice-text">
+                <strong>{x.name}</strong>
+                <small>{selectedChoice === x.id ? "Selected" : "Choose colour"}</small>
+              </span>
+              <b>{selectedChoice === x.id ? "✓" : ""}</b>
+            </button>
+          ))}
+
+          <label className={`visual-colour-card custom-premium-card ${selectedChoice === "custom" ? "active" : ""}`}>
+            <input
+              type="color"
+              value={customColour}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCustomInteriorColors((prev) => ({ ...prev, [interiorZone]: value }));
+                setInteriorSettings((prev) => ({ ...prev, [interiorZone]: "custom" }));
+                activate();
+              }}
+            />
+            <span className="colour-disc custom-disc" style={{ background: customColour }}>+</span>
+            <span className="choice-text">
+              <strong>CUSTOM COLOUR</strong>
+              <small>{customColour.toUpperCase()}</small>
+            </span>
+            <b>{selectedChoice === "custom" ? "✓" : ""}</b>
+          </label>
         </div>
       </div>
     );
@@ -1240,6 +1473,8 @@ function ModPanel({
       ["lip", "Front Lip", "Sharper front-end appearance"],
       ["skirts", "Side Skirts", "Lower visual body line"],
       ["diffuser", "Rear Diffuser", "Performance rear styling"],
+      ["splitter", "Front Splitter", "Wider lower front blade"],
+      ["canards", "Front Canards", "Track-inspired corner aero"],
     ];
 
     return (
@@ -1306,6 +1541,22 @@ function ModPanel({
             </button>
           ))}
         </div>
+
+        <ChoiceHeader title="Glass tone" text="Keep a neutral tint or add a subtle custom glass tone." />
+        <div className="glass-tone-grid">
+          {[
+            ["#b9c7cc","Neutral"],["#8fa8b5","Cool Smoke"],["#7d8f86","Olive Smoke"],
+            ["#6f8298","Blue Smoke"],["#9a8372","Bronze"],["#596064","Graphite"]
+          ].map(([hex,name]) => (
+            <button key={hex} className={glassColor === hex ? "active" : ""} onClick={() => { setGlassColor(hex); activate(); }}>
+              <i style={{background:hex}} /><span>{name}</span>
+            </button>
+          ))}
+          <label className="glass-custom-color">
+            <input type="color" value={glassColor} onChange={(e) => { setGlassColor(e.target.value); activate(); }} />
+            <i style={{background:glassColor}}>+</i><span>Custom</span>
+          </label>
+        </div>
       </div>
     );
   }
@@ -1357,7 +1608,7 @@ function ModPanel({
       <div className="mod-panel simple-step-panel">
         <ChoiceHeader
           title="Lighting preview"
-          text="Switch the workshop and vehicle lights to compare the look."
+          text="Control the vehicle lights while the photographic garage lighting stays consistent."
         />
 
 
@@ -1368,12 +1619,22 @@ function ModPanel({
             ["#f5f7ff","Platinum White"],
             ["#d9ecff","Ice White"],
             ["#bdd9ff","Cool Blue"],
+            ["#8fc8ff","Xenon Blue"],
+            ["#b9a6ff","Violet"],
+            ["#ffe08a","Golden"],
+            ["#ffb36b","Amber"],
+            ["#ff5b5b","Show Red"],
+            ["#7dffb2","Mint"],
           ].map(([hex,name]) => (
             <button key={hex} className={lightColor === hex ? "active" : ""}
               onClick={() => { setLightColor(hex); setLightsOn(true); activate(); }}>
               <i style={{background:hex}} /><span>{name}</span>
             </button>
           ))}
+          <label className="custom-light-color">
+            <input type="color" value={lightColor} onChange={(e) => { setLightColor(e.target.value); setLightsOn(true); activate(); }} />
+            <i style={{background:lightColor}}>+</i><span>CUSTOM LIGHT</span>
+          </label>
         </div>
         <div className="clear-range-card">
           <div className="range-card-head">
@@ -1391,7 +1652,7 @@ function ModPanel({
           <span className="feature-visual light-visual">✦</span>
           <span className="choice-text">
             <strong>{lightsOn ? "Lights On" : "Night Preview"}</strong>
-            <small>{lightsOn ? "Workshop and vehicle lighting enabled" : "Tap to restore full lighting"}</small>
+            <small>{lightsOn ? "Vehicle lighting enabled" : "Tap to switch vehicle lights on"}</small>
           </span>
           <span className="lux-switch"><i /></span>
         </button>
@@ -1442,19 +1703,33 @@ export default function App() {
   const [view, setView] = useState("360");
   const [zoom, setZoom] = useState(0);
   const [lightsOn, setLightsOn] = useState(true);
-  const [paintTone, setPaintTone] = useState("navy");
+  const [paintTone, setPaintTone] = useState("blue");
   const [customPaint, setCustomPaint] = useState("#ff5a1f");
-  const [customRimColor, setCustomRimColor] = useState("#fb0404");
+  const [customRimColor, setCustomRimColor] = useState("#A88752");
   const [customCaliperColor, setCustomCaliperColor] = useState("#d71920");
+  const [interiorSettings, setInteriorSettings] = useState({
+    seats: "cognac",
+    dashboard: "black",
+    console: "black",
+    doors: "cognac",
+  });
+  const [customInteriorColors, setCustomInteriorColors] = useState({
+    seats: "#9A542F",
+    dashboard: "#343638",
+    console: "#70452F",
+    doors: "#9A542F",
+  });
   const [finish, setFinish] = useState("metallic");
   const [rim, setRim] = useState("custom");
   const [caliper, setCaliper] = useState("red");
   const [tint, setTint] = useState("smoke");
+  const [glassColor, setGlassColor] = useState("#8fa8b5");
   const [carbon, setCarbon] = useState(true);
-  const [aero, setAero] = useState({ wing: true, lip: true, skirts: true, diffuser: true });
+  const [aero, setAero] = useState({ wing: true, lip: true, skirts: true, diffuser: true, splitter:false, canards:false });
   const [stance, setStance] = useState(.28);
   const [steering, setSteering] = useState(0);
   const [wheelSpin, setWheelSpin] = useState(false);
+  const [openParts, setOpenParts] = useState({ frontL:false, frontR:false, rearL:false, rearR:false, hood:false, trunk:false });
   const [before, setBefore] = useState(false);
   const [activeCategory, setActiveCategory] = useState("paint");
   const [environment, setEnvironment] = useState("studio");
@@ -1501,9 +1776,10 @@ export default function App() {
   const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(total);
 
   const reset = () => {
-    setPaintTone("navy"); setFinish("metallic"); setRim("custom"); setCustomRimColor("rgb(251, 4, 4)"); setCaliper("red");
+    setPaintTone("blue"); setFinish("metallic"); setRim("custom"); setCustomRimColor("rgb(251, 4, 4)"); setCaliper("red");
     setTint("smoke"); setCarbon(true); setAero({wing:true,lip:true,skirts:true,diffuser:true});
     setStance(.28); setSteering(0); setBefore(false); setView("360"); setZoom(0);
+    setOpenParts({ frontL:false, frontR:false, rearL:false, rearR:false, hood:false, trunk:false }); setWheelSpin(false);
     setToast("BUILD RESET");
   };
 
@@ -1599,13 +1875,34 @@ export default function App() {
     if (!mobileMenu) return;
 
     const closeMenu = (event) => {
-      if (event.target.closest(".menu")) return;
+      // Do not close on pointerdown inside the hamburger or nav itself.
+      // Nav links close the menu from their own click handler after navigation starts.
+      if (event.target.closest(".menu") || event.target.closest(".topbar nav")) return;
       setMobileMenu(false);
     };
 
     document.addEventListener("pointerdown", closeMenu);
     return () => document.removeEventListener("pointerdown", closeMenu);
   }, [mobileMenu]);
+
+  const handleNavClick = (event, targetId) => {
+    event.preventDefault();
+
+    const target = document.getElementById(targetId);
+    setMobileMenu(false);
+
+    if (!target) return;
+
+    // Close the dropdown first, then scroll with sticky-header clearance.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const headerHeight = document.querySelector(".topbar")?.offsetHeight || 70;
+        const top = target.getBoundingClientRect().top + window.scrollY - headerHeight - 12;
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        window.history.replaceState(null, "", `#${targetId}`);
+      });
+    });
+  };
 
   return (
     <div className={`site ${lightsOn ? "lights-on" : "lights-off"} env-${environment}`}>
@@ -1616,33 +1913,22 @@ export default function App() {
           <span className="brand-mark">⬡</span>
           <span><strong>DRIVE MODS</strong><small>CUSTOMIZE BEYOND LIMITS</small></span>
         </a>
-        <nav className={mobileMenu ? "open" : ""} onClick={() => setMobileMenu(false)}>
-          <a href="#home">HOME</a><a href="#customize">CUSTOMIZE</a><a href="#packages">PACKAGES</a>
-          <a href="#gallery">GALLERY</a><a href="#services">SERVICES</a><a href="#about">ABOUT</a><a href="#contact">CONTACT</a>
+        <nav className={mobileMenu ? "open" : ""}>
+          <a href="#home" onClick={(e) => handleNavClick(e, "home")}>HOME</a>
+          <a href="#customize" onClick={(e) => handleNavClick(e, "customize")}>CUSTOMIZE</a>
+          <a href="#packages" onClick={(e) => handleNavClick(e, "packages")}>PACKAGES</a>
+          <a href="#gallery" onClick={(e) => handleNavClick(e, "gallery")}>GALLERY</a>
+          <a href="#services" onClick={(e) => handleNavClick(e, "services")}>SERVICES</a>
+          <a href="#about" onClick={(e) => handleNavClick(e, "about")}>ABOUT</a>
+          <a href="#contact" onClick={(e) => handleNavClick(e, "contact")}>CONTACT</a>
         </nav>
         <div className="nav-actions">
-          <button className="icon-button" aria-label="Search">⌕</button>
-          <button className={`light-switch ${lightsOn ? "active" : ""}`} onClick={() => setLightsOn(v => !v)}>
-            <span>☼</span><i /><b>{lightsOn ? "LIGHT ON" : "LIGHT OFF"}</b>
-          </button>
           <button className={`menu ${mobileMenu ? "active" : ""}`} onClick={() => setMobileMenu(v => !v)} aria-label="Menu" aria-expanded={mobileMenu}><i/><i/><i/></button>
         </div>
       </header>
 
       <main>
         <section className={`hero ${mobileCustomizerOpen ? "mobile-editing" : ""}`} id="home">
-          <div className="hero-studio realistic-workshop-overlay" aria-hidden="true">
-            <div className="garage-vignette" />
-            <div className="garage-bay-label">
-              <span>PERFORMANCE ATELIER</span>
-              <b>BAY 01</b>
-            </div>
-            <div className="garage-brand-sign">
-              <small>PRECISION PERFORMANCE</small>
-              <strong>DRIVE MODS</strong>
-              <i />
-            </div>
-          </div>
           <div className="hero-copy">
             <small>PERFORMANCE ATELIER // MUMBAI</small>
             <h1>ENGINEERED<br/><span>TO BE DIFFERENT.</span></h1>
@@ -1658,25 +1944,6 @@ export default function App() {
 
           <div className="hero-corner hero-corner-tl" aria-hidden="true" />
           <div className="hero-corner hero-corner-br" aria-hidden="true" />
-
-          <aside className="view-modes">
-            <strong>VIEW MODES</strong>
-            {[
-              ["360","◎","360°"],["front","▱","FRONT"],["rear","▱","REAR"],
-              ["left","▱","LEFT"],["right","▱","RIGHT"],["top","▣","TOP"],
-            ].map(([id,icon,label]) => (
-              <button
-                key={id}
-                className={view === id ? "active" : ""}
-                onClick={() => {
-                  setView(id);
-                  setAutoRotate(id === "360");
-                  if (id !== "360") setRotation(0);
-                  setZoom(0);
-                }}
-              >{icon}<span>{label}</span></button>
-            ))}
-          </aside>
 
           {/* MOBILE: direct left-side entry to the configurator */}
           <button
@@ -1717,7 +1984,7 @@ export default function App() {
               }}
               onCreated={({gl}) => {
                 gl.toneMapping = THREE.ACESFilmicToneMapping;
-                gl.toneMappingExposure = lightsOn ? 1.08 : .72;
+                gl.toneMappingExposure = 0.78;
                 gl.outputColorSpace = THREE.SRGBColorSpace;
                 gl.shadowMap.enabled = true;
                 gl.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1728,7 +1995,7 @@ export default function App() {
                 rotation={rotation} autoRotate={autoRotate && view === "360"} lightsOn={lightsOn}
                 paintTone={paintTone} customPaint={customPaint} finish={finish} rim={rim}
             customRimColor={customRimColor}
-                caliper={caliper} customCaliperColor={customCaliperColor} tint={tint} carbon={carbon} aero={aero} stance={stance}
+                caliper={caliper} customCaliperColor={customCaliperColor} tint={tint} glassColor={glassColor} carbon={carbon} aero={aero} stance={stance}
                 steering={steering} wheelSpin={wheelSpin} before={before} view={view} zoom={zoom}
               
                 lightColor={lightColor}
@@ -1740,18 +2007,35 @@ export default function App() {
                 carbonFinish={carbonFinish}
                 beforeMode={beforeMode}
                 mobileCustomizerOpen={mobileCustomizerOpen}
+                openParts={openParts}
+                interiorSettings={interiorSettings}
+                customInteriorColors={customInteriorColors}
                 />
             </Canvas>
+          </div>
+
+          {/* Direct garage controls: these are vehicle actions, not customization options. */}
+          <div className="garage-action-dock" aria-label="Vehicle opening controls">
+            <button className={(openParts.frontL && openParts.frontR && openParts.rearL && openParts.rearR) ? "active" : ""} onClick={() => {
+              const allOpen = openParts.frontL && openParts.frontR && openParts.rearL && openParts.rearR;
+              setOpenParts(p => ({...p, frontL:!allOpen, frontR:!allOpen, rearL:!allOpen, rearR:!allOpen}));
+            }}><i>↔</i><span>DOORS</span></button>
+            <button className={openParts.frontL ? "active" : ""} onClick={() => setOpenParts(p => ({...p,frontL:!p.frontL}))}><i>↗</i><span>FL DOOR</span></button>
+            <button className={openParts.frontR ? "active" : ""} onClick={() => setOpenParts(p => ({...p,frontR:!p.frontR}))}><i>↖</i><span>FR DOOR</span></button>
+            <button className={openParts.rearL ? "active" : ""} onClick={() => setOpenParts(p => ({...p,rearL:!p.rearL}))}><i>↗</i><span>RL DOOR</span></button>
+            <button className={openParts.rearR ? "active" : ""} onClick={() => setOpenParts(p => ({...p,rearR:!p.rearR}))}><i>↖</i><span>RR DOOR</span></button>
+            <button className={openParts.hood ? "active" : ""} onClick={() => setOpenParts(p => ({...p,hood:!p.hood}))}><i>⌃</i><span>BONNET</span></button>
+            <button className={openParts.trunk ? "active" : ""} onClick={() => setOpenParts(p => ({...p,trunk:!p.trunk}))}><i>⌃</i><span>BOOT</span></button>
+            <button className={wheelSpin ? "active" : ""} onClick={() => setWheelSpin(v => !v)}><i>◉</i><span>{wheelSpin ? "STOP WHEELS" : "SPIN WHEELS"}</span></button>
           </div>
 
           <div className="interaction-hint"><span>DRAG TO ROTATE</span><i/><span>SCROLL TO ZOOM</span><i/><span>LIVE WORKSHOP PREVIEW</span></div>
 
           <div className="compare-reset">
             <button className={before ? "active" : ""} onClick={() => setBefore(v => !v)}>BEFORE / AFTER <span>◐</span></button>
-            <button onClick={reset}>RESET</button>
           </div>
 
-          <aside className="desktop-customizer" id="customize">
+          <aside className="desktop-customizer">
             <div className="customizer-header">
               <div>
                 <small>DRIVE MODS // CONFIGURATOR</small>
@@ -1793,7 +2077,9 @@ export default function App() {
                 customRimColor={customRimColor} setCustomRimColor={setCustomRimColor}
                 caliper={caliper} setCaliper={setCaliper}
                 customCaliperColor={customCaliperColor} setCustomCaliperColor={setCustomCaliperColor}
-                tint={tint} setTint={setTint}
+                interiorSettings={interiorSettings} setInteriorSettings={setInteriorSettings}
+                customInteriorColors={customInteriorColors} setCustomInteriorColors={setCustomInteriorColors}
+                tint={tint} setTint={setTint} glassColor={glassColor} setGlassColor={setGlassColor}
                 carbon={carbon} setCarbon={setCarbon}
                 aero={aero} setAero={setAero}
                 stance={stance} setStance={setStance}
@@ -1812,20 +2098,11 @@ export default function App() {
                     activePreset={activePreset}
                     applyBuildPreset={applyBuildPreset}
                     applyAeroPreset={applyAeroPreset}
+                    openParts={openParts} setOpenParts={setOpenParts}
                     activate={activate}
               />
             </div>
 
-            <div className="sidebar-build-summary">
-              <div>
-                <small>ESTIMATED MODIFICATIONS</small>
-                <strong>{money}</strong>
-              </div>
-              <div className="sidebar-build-actions">
-                <button onClick={reset}>RESET</button>
-                <button className="sidebar-save" onClick={saveBuild}>SAVE BUILD</button>
-              </div>
-            </div>
           </aside>
 
           <button
@@ -1911,7 +2188,9 @@ export default function App() {
                 customRimColor={customRimColor} setCustomRimColor={setCustomRimColor}
                 caliper={caliper} setCaliper={setCaliper}
                 customCaliperColor={customCaliperColor} setCustomCaliperColor={setCustomCaliperColor}
-                tint={tint} setTint={setTint}
+                interiorSettings={interiorSettings} setInteriorSettings={setInteriorSettings}
+                customInteriorColors={customInteriorColors} setCustomInteriorColors={setCustomInteriorColors}
+                tint={tint} setTint={setTint} glassColor={glassColor} setGlassColor={setGlassColor}
                 carbon={carbon} setCarbon={setCarbon}
                 aero={aero} setAero={setAero}
                 stance={stance} setStance={setStance}
@@ -1930,17 +2209,11 @@ export default function App() {
                     activePreset={activePreset}
                     applyBuildPreset={applyBuildPreset}
                     applyAeroPreset={applyAeroPreset}
+                    openParts={openParts} setOpenParts={setOpenParts}
                     activate={activate}
               />
             </div>
 
-            <div className="mobile-build-footer">
-              <div>
-                <small>ESTIMATED MODS</small>
-                <strong>{money}</strong>
-              </div>
-              <button onClick={saveBuild}>SAVE BUILD</button>
-            </div>
 
                 </aside>
               </>,
@@ -1950,7 +2223,7 @@ export default function App() {
 
         </section>
 
-        <section className="configurator configurator-after-hero">
+        <section className="configurator configurator-after-hero" id="customize">
           <div className="feature-strip">
             <div><b>⚙</b><span><strong>300+</strong><small>PERFORMANCE PARTS</small></span></div>
             <div><b>▱</b><span><strong>50+</strong><small>PREMIUM BRANDS</small></span></div>
