@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Html, RoundedBox, useGLTF, useProgress } from "@react-three/drei";
 import * as THREE from "three";
@@ -197,32 +198,95 @@ function Loader() {
   );
 }
 
-function CameraRig({ view, zoom }) {
+function CameraRig({ view, zoom, mobileCustomizerOpen = false }) {
   const { camera, size } = useThree();
   const mobile = size.width < 760;
 
-  const positions = useMemo(() => ({
-    "360": mobile ? [7.45, 2.20, 9.80] : [5.95, 1.78, 7.10],
-    front: mobile ? [0, 1.25, 10.2] : [0, 1.05, 7.7],
-    rear: mobile ? [0, 1.35, -10.2] : [0, 1.1, -7.7],
-    left: mobile ? [-9.5, 1.45, 0] : [-7.3, 1.25, 0],
-    right: mobile ? [9.5, 1.45, 0] : [7.3, 1.25, 0],
-    top: mobile ? [0, 11, .1] : [0, 9, .1],
-    wheels: mobile ? [6.4, .85, 7.4] : [5.0, .65, 5.2],
-    brakes: mobile ? [5.9, .75, 7.0] : [4.6, .55, 4.8],
-    aero: mobile ? [-6.6, 1.2, -7.4] : [-5.1, 1.0, -5.2],
-    glass: mobile ? [6.0, 2.7, 7.4] : [4.7, 2.25, 5.4],
-  }), [mobile]);
+  const positions = useMemo(
+    () => ({
+      "360": mobile
+        ? mobileCustomizerOpen
+          ? [8.4, 3.0, 12.0]
+          : [7.45, 2.20, 9.80]
+        : [5.95, 1.78, 7.10],
+
+      front: mobile
+        ? mobileCustomizerOpen
+          ? [0, 2.25, 12.8]
+          : [0, 1.25, 10.2]
+        : [0, 1.05, 7.7],
+
+      rear: mobile
+        ? mobileCustomizerOpen
+          ? [0, 2.25, -12.8]
+          : [0, 1.35, -10.2]
+        : [0, 1.1, -7.7],
+
+      left: mobile
+        ? mobileCustomizerOpen
+          ? [-12.2, 2.25, 0]
+          : [-9.5, 1.45, 0]
+        : [-7.3, 1.25, 0],
+
+      right: mobile
+        ? mobileCustomizerOpen
+          ? [12.2, 2.25, 0]
+          : [9.5, 1.45, 0]
+        : [7.3, 1.25, 0],
+
+      top: mobile
+        ? mobileCustomizerOpen
+          ? [0, 12.5, 0.1]
+          : [0, 11, 0.1]
+        : [0, 9, 0.1],
+
+      wheels: mobile
+        ? mobileCustomizerOpen
+          ? [8.2, 1.7, 10.0]
+          : [6.4, .85, 7.4]
+        : [5.0, .65, 5.2],
+
+      brakes: mobile
+        ? mobileCustomizerOpen
+          ? [7.8, 1.7, 9.6]
+          : [5.9, .75, 7.0]
+        : [4.6, .55, 4.8],
+
+      aero: mobile
+        ? mobileCustomizerOpen
+          ? [-8.6, 2.0, -10.0]
+          : [-6.6, 1.2, -7.4]
+        : [-5.1, 1.0, -5.2],
+
+      glass: mobile
+        ? mobileCustomizerOpen
+          ? [8.0, 3.35, 10.0]
+          : [6.0, 2.7, 7.4]
+        : [4.7, 2.25, 5.4],
+    }),
+    [mobile, mobileCustomizerOpen]
+  );
 
   useFrame(() => {
     const base = new THREE.Vector3(...(positions[view] || positions["360"]));
-    // Keep enough framing margin for the COMPLETE vehicle.
-    // Zoom now has a wider useful range instead of starting too close.
-    base.multiplyScalar(THREE.MathUtils.lerp(1.00, .78, zoom));
-    camera.position.lerp(base, .065);
-    camera.lookAt(0, view === "top" ? -.2 : -.35, 0);
+
+    // While editing on mobile, keep the whole car in frame.
+    const editZoom = mobile && mobileCustomizerOpen ? Math.min(zoom, 0.22) : zoom;
+    base.multiplyScalar(THREE.MathUtils.lerp(1.00, .78, editZoom));
+
+    camera.position.lerp(base, mobile && mobileCustomizerOpen ? .085 : .065);
+
+    const targetY =
+      mobile && mobileCustomizerOpen
+        ? 0.38
+        : view === "top"
+          ? -.2
+          : -.35;
+
+    camera.lookAt(0, targetY, 0);
     camera.updateProjectionMatrix();
   });
+
   return null;
 }
 
@@ -856,6 +920,7 @@ function ModPanel({
   rimScale, setRimScale, caliperGloss, setCaliperGloss,
   carbonFinish, setCarbonFinish, demoMode, setDemoMode,
   beforeMode, setBeforeMode, activePreset, applyBuildPreset, applyAeroPreset,
+  mobileCustomizerOpen,
 }) {
   const info = CATEGORY_INFO[active];
 
@@ -1510,6 +1575,17 @@ export default function App() {
   }, []);
 
 
+  useEffect(() => {
+    if (!mobileCustomizerOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileCustomizerOpen]);
+
   return (
     <div className={`site ${lightsOn ? "lights-on" : "lights-off"} env-${environment}`}>
       {toast && <div className="toast">{toast}</div>}
@@ -1533,7 +1609,7 @@ export default function App() {
       </header>
 
       <main>
-        <section className="hero" id="home">
+        <section className={`hero ${mobileCustomizerOpen ? "mobile-editing" : ""}`} id="home">
           <div className="hero-studio realistic-workshop-overlay" aria-hidden="true">
             <div className="garage-vignette" />
             <div className="garage-film-grain" />
@@ -1569,7 +1645,16 @@ export default function App() {
               ["360","◎","360°"],["front","▱","FRONT"],["rear","▱","REAR"],
               ["left","▱","LEFT"],["right","▱","RIGHT"],["top","▣","TOP"],
             ].map(([id,icon,label]) => (
-              <button key={id} className={view === id ? "active" : ""} onClick={() => { setView(id); setAutoRotate(id === "360"); }}>{icon}<span>{label}</span></button>
+              <button
+                key={id}
+                className={view === id ? "active" : ""}
+                onClick={() => {
+                  setView(id);
+                  setAutoRotate(id === "360");
+                  if (id !== "360") setRotation(0);
+                  setZoom(0);
+                }}
+              >{icon}<span>{label}</span></button>
             ))}
           </aside>
 
@@ -1577,9 +1662,10 @@ export default function App() {
           <button
             type="button"
             className={`mobile-side-customize ${mobileCustomizerOpen ? "active" : ""}`}
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               setMobileCustomizerOpen(true);
-              setAutoRotate(false);
             }}
             aria-label="Open car customizer"
             aria-expanded={mobileCustomizerOpen}
@@ -1592,6 +1678,12 @@ export default function App() {
             </span>
             <span className="mobile-side-customize-arrow">›</span>
           </button>
+
+          <div className="car-swipe-cues" aria-hidden="true">
+            <span className="car-swipe-arrow car-swipe-left">‹</span>
+            <span className="car-swipe-label">SWIPE / DRAG</span>
+            <span className="car-swipe-arrow car-swipe-right">›</span>
+          </div>
 
           <div
             className={`car-stage ${dragging ? "dragging" : ""}`}
@@ -1634,7 +1726,8 @@ export default function App() {
                 caliperGloss={caliperGloss}
                 carbonFinish={carbonFinish}
                 beforeMode={beforeMode}
-              />
+                mobileCustomizerOpen={mobileCustomizerOpen}
+                />
             </Canvas>
           </div>
 
@@ -1724,7 +1817,11 @@ export default function App() {
 
           <button
             className={`mobile-customize-trigger ${mobileCustomizerOpen ? "is-open" : ""}`}
-            onClick={() => setMobileCustomizerOpen(v => !v)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMobileCustomizerOpen(v => !v);
+            }}
             aria-expanded={mobileCustomizerOpen}
             aria-controls="mobile-customizer"
           >
@@ -1736,16 +1833,22 @@ export default function App() {
             <b>{mobileCustomizerOpen ? "×" : "⌃"}</b>
           </button>
 
-          <div
-            className={`mobile-customizer-backdrop ${mobileCustomizerOpen ? "open" : ""}`}
-            onClick={() => setMobileCustomizerOpen(false)}
-            aria-hidden="true"
-          />
+          {typeof document !== "undefined" &&
+            createPortal(
+              <>
+                <div
+                  className={`mobile-customizer-backdrop ${mobileCustomizerOpen ? "open" : ""}`}
+                  onClick={() => setMobileCustomizerOpen(false)}
+                  aria-hidden="true"
+                />
 
-          <aside
-            className={`mobile-customizer ${mobileCustomizerOpen ? "open" : ""}`}
-            id="mobile-customizer"
-          >
+                <aside
+                  className={`mobile-customizer ${mobileCustomizerOpen ? "open" : ""}`}
+                  id="mobile-customizer"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Car customizer"
+                >
             <div className="mobile-drawer-handle" />
 
             <div className="mobile-customizer-head">
@@ -1820,7 +1923,13 @@ export default function App() {
               </div>
               <button onClick={saveBuild}>SAVE BUILD</button>
             </div>
-          </aside>
+
+                </aside>
+              </>,
+              document.body
+            )
+          }
+
         </section>
 
         <section className="configurator configurator-after-hero">

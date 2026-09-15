@@ -1,3 +1,5 @@
+
+
 @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap");
 
@@ -5751,7 +5753,8 @@ footer a:hover{color:#D62828 !important}
     0 0 25px rgba(214,40,40,.12) !important;
 }
 
-/* MARQUEE — red/navy/platinum */
+/* MARQUEE — red
+avy/platinum */
 .brand-marquee{
   border-color:rgba(214,40,40,.30) !important;
   background:
@@ -6091,3 +6094,647 @@ footer a:hover{color:#D62828 !important}
     animation: none !important;
   }
 }
+
+
+/* =========================================================
+   REQUESTED FIXES — MOBILE CUSTOMIZER / VIEW MODES / RED MARQUEE / SWIPE CUES
+   ========================================================= */
+
+/* Marquee copy: Racing Red for stronger visibility. */
+.brand-marquee .marquee-group span{
+  color:#D62828 !important;
+  text-shadow:0 0 12px rgba(214,40,40,.22);
+}
+
+/* Racing-red arrows tell the customer the 3D car can be dragged/swiped. */
+.car-swipe-cues{
+  position:absolute;
+  z-index:74;
+  left:calc(31% + 26px);
+  right:26px;
+  top:50%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  pointer-events:none;
+  transform:translateY(-50%);
+}
+.car-swipe-arrow{
+  width:42px;
+  height:58px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(214,40,40,.65);
+  border-radius:12px;
+  background:rgba(8,10,11,.66);
+  color:#D62828;
+  font:700 38px/1 var(--orbit);
+  box-shadow:0 0 22px rgba(214,40,40,.18),inset 0 0 16px rgba(214,40,40,.05);
+  text-shadow:0 0 10px rgba(214,40,40,.6);
+}
+.car-swipe-left{animation:carSwipeLeft 1.45s ease-in-out infinite}
+.car-swipe-right{animation:carSwipeRight 1.45s ease-in-out infinite}
+.car-swipe-label{
+  align-self:flex-end;
+  margin-bottom:-72px;
+  padding:6px 10px;
+  border:1px solid rgba(214,40,40,.28);
+  border-radius:999px;
+  background:rgba(8,10,11,.62);
+  color:#D62828;
+  font:700 7px var(--orbit);
+  letter-spacing:.16em;
+}
+@keyframes carSwipeLeft{0%,100%{transform:translateX(0);opacity:.55}50%{transform:translateX(-7px);opacity:1}}
+@keyframes carSwipeRight{0%,100%{transform:translateX(0);opacity:.55}50%{transform:translateX(7px);opacity:1}}
+
+@media(max-width:760px){
+  /* Make EDIT CAR / CUSTOMIZE a guaranteed tappable control above the WebGL canvas. */
+  .mobile-side-customize{
+    z-index:120 !important;
+    pointer-events:auto !important;
+    touch-action:manipulation !important;
+    -webkit-tap-highlight-color:transparent;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+
+  /* Force the drawer to become interactive immediately when React adds .open. */
+  .mobile-customizer{
+    display:flex !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+    transform:translate3d(0,102%,0) !important;
+    transition:transform .16s ease-out,visibility 0s linear .16s !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  .mobile-customizer.open{
+    visibility:visible !important;
+    pointer-events:auto !important;
+    transform:translate3d(0,0,0) !important;
+    transition:transform .16s ease-out,visibility 0s !important;
+  }
+  .mobile-customizer-backdrop{
+    display:block !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    transition:opacity .12s linear,visibility .12s linear !important;
+  }
+  .mobile-customizer-backdrop.open{
+    visibility:visible !important;
+    opacity:1 !important;
+    pointer-events:auto !important;
+  }
+
+  /* Correct mobile VIEW MODES: full-width horizontal control, no hidden views. */
+  .view-modes{
+    position:absolute !important;
+    z-index:95 !important;
+    top:76px !important;
+    left:12px !important;
+    right:12px !important;
+    bottom:auto !important;
+    width:auto !important;
+    max-width:none !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-columns:repeat(6,minmax(0,1fr)) !important;
+    transform:none !important;
+    border-radius:10px !important;
+    overflow:hidden !important;
+    background:rgba(8,10,11,.88) !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  .view-modes>strong{display:none !important}
+  .view-modes button,
+  .view-modes button:nth-of-type(n+5){
+    display:flex !important;
+    width:100% !important;
+    min-width:0 !important;
+    min-height:42px !important;
+    height:42px !important;
+    padding:4px 2px !important;
+    flex-direction:column !important;
+    justify-content:center !important;
+    gap:2px !important;
+    border-top:0 !important;
+    border-right:1px solid rgba(255,255,255,.055) !important;
+    font-size:12px !important;
+  }
+  .view-modes button:last-child{border-right:0 !important}
+  .view-modes button span{
+    display:block !important;
+    font-size:6px !important;
+    letter-spacing:.04em !important;
+  }
+  .view-modes button.active{
+    color:#F2F2F0 !important;
+    background:linear-gradient(180deg,rgba(214,40,40,.34),rgba(214,40,40,.10)) !important;
+    box-shadow:inset 0 -2px #D62828 !important;
+  }
+
+  /* Keep full car framed beneath the horizontal view selector. */
+  .car-stage{
+    top:94px !important;
+    left:-10px !important;
+    right:-10px !important;
+    width:calc(100% + 20px) !important;
+    height:470px !important;
+    min-height:470px !important;
+  }
+
+  .car-swipe-cues{
+    z-index:76;
+    left:10px;
+    right:10px;
+    top:46%;
+  }
+  .car-swipe-arrow{
+    width:31px;
+    height:46px;
+    border-radius:9px;
+    font-size:29px;
+    background:rgba(8,10,11,.55);
+  }
+  .car-swipe-label{
+    margin-bottom:-58px;
+    font-size:6px;
+    padding:5px 8px;
+  }
+}
+
+@media(max-width:430px){
+  .view-modes{top:72px !important;left:8px !important;right:8px !important}
+  .view-modes button,.view-modes button:nth-of-type(n+5){min-height:39px !important;height:39px !important}
+  .car-stage{top:86px !important;height:445px !important;min-height:445px !important}
+  .mobile-side-customize{top:47% !important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .car-swipe-left,.car-swipe-right{animation:none !important}
+}
+
+
+/* =========================================================
+   MOBILE CUSTOMIZER — TAP / LAYER FIX
+   Keep this block LAST in the stylesheet.
+   ========================================================= */
+@media (max-width:760px){
+  .mobile-side-customize{
+    position:absolute !important;
+    z-index:1002 !important;
+    pointer-events:auto !important;
+    touch-action:manipulation !important;
+  }
+
+  .mobile-customizer-backdrop{
+    z-index:1000 !important;
+  }
+
+  .mobile-customizer{
+    z-index:1001 !important;
+    display:flex !important;
+    opacity:0 !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+    transform:translate3d(0,100%,0) !important;
+    transition:transform .16s ease-out,opacity .10s linear,visibility 0s linear .16s !important;
+  }
+
+  .mobile-customizer.open{
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+    transform:translate3d(0,0,0) !important;
+    transition:transform .16s ease-out,opacity .10s linear,visibility 0s !important;
+  }
+
+  .mobile-customizer.open ~ *{
+    /* intentionally empty: prevents older generic sibling patches from being needed */
+  }
+}
+
+/* =========================================================
+   FINAL MOBILE CUSTOMIZER PORTAL FIX
+   Drawer is rendered under document.body, outside the 3D hero.
+   Keep this block LAST.
+   ========================================================= */
+@media (max-width: 760px) {
+  .mobile-side-customize {
+    position: absolute !important;
+    left: 0 !important;
+    top: 47% !important;
+    z-index: 9000 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-customize-trigger {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+
+  body > .mobile-customizer-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483000 !important;
+    display: block !important;
+    background: rgba(0, 0, 0, 0.58) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: none !important;
+    transition: opacity .14s ease, visibility 0s linear .14s !important;
+  }
+
+  body > .mobile-customizer-backdrop.open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transition: opacity .14s ease, visibility 0s !important;
+  }
+
+  body > .mobile-customizer {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    z-index: 2147483001 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+
+    width: 100% !important;
+    max-width: none !important;
+    height: min(74dvh, 680px) !important;
+    max-height: calc(100dvh - 52px) !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    border: 1px solid rgba(214, 40, 40, .42) !important;
+    border-bottom: 0 !important;
+    border-radius: 22px 22px 0 0 !important;
+
+    background:
+      radial-gradient(circle at 10% 0%, rgba(214,40,40,.13), transparent 34%),
+      linear-gradient(180deg, #151b22 0%, #0e1620 46%, #080a0d 100%) !important;
+
+    box-shadow: 0 -24px 70px rgba(0,0,0,.72) !important;
+
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate3d(0, 105%, 0) !important;
+
+    will-change: transform !important;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+
+    transition:
+      transform .18s cubic-bezier(.2,.8,.2,1),
+      opacity .10s linear,
+      visibility 0s linear .18s !important;
+  }
+
+  body > .mobile-customizer.open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translate3d(0, 0, 0) !important;
+
+    transition:
+      transform .18s cubic-bezier(.2,.8,.2,1),
+      opacity .10s linear,
+      visibility 0s !important;
+  }
+
+  body > .mobile-customizer .mobile-control-area {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body > .mobile-customizer .mobile-category-tabs {
+    flex: 0 0 auto !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body > .mobile-customizer button,
+  body > .mobile-customizer input,
+  body > .mobile-customizer select {
+    pointer-events: auto !important;
+    touch-action: manipulation;
+  }
+}
+
+@media (max-width: 430px) {
+  body > .mobile-customizer {
+    height: min(78dvh, 650px) !important;
+    max-height: calc(100dvh - 44px) !important;
+  }
+}
+
+/* =========================================================
+   FINAL MOBILE LIVE CAR PREVIEW + CUSTOMIZER
+   Keep this block LAST.
+   ========================================================= */
+
+@media (max-width: 760px) {
+
+  .mobile-side-customize {
+    position: absolute !important;
+    left: 0 !important;
+    top: 43% !important;
+    z-index: 9000 !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-customize-trigger {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+
+  /* Backdrop only occupies the drawer region so the car remains visible. */
+  body > .mobile-customizer-backdrop {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    height: 58dvh !important;
+    z-index: 2147483000 !important;
+    display: block !important;
+    background: rgba(0, 0, 0, .18) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: none !important;
+    transition: opacity .14s ease, visibility 0s linear .14s !important;
+  }
+
+  body > .mobile-customizer-backdrop.open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: none !important;
+    transition: opacity .14s ease, visibility 0s !important;
+  }
+
+  body > .mobile-customizer {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    z-index: 2147483001 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+
+    width: 100% !important;
+    max-width: none !important;
+    height: 58dvh !important;
+    max-height: 58dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+
+    border: 1px solid rgba(214, 40, 40, .45) !important;
+    border-bottom: 0 !important;
+    border-radius: 22px 22px 0 0 !important;
+
+    background:
+      radial-gradient(circle at 10% 0%, rgba(214, 40, 40, .14), transparent 34%),
+      linear-gradient(180deg, #151b22 0%, #0e1620 46%, #080a0d 100%) !important;
+
+    box-shadow:
+      0 -20px 60px rgba(0, 0, 0, .62),
+      0 -1px 0 rgba(214, 40, 40, .22) !important;
+
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate3d(0, 105%, 0) !important;
+
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+
+    transition:
+      transform .18s cubic-bezier(.2,.8,.2,1),
+      opacity .10s linear,
+      visibility 0s linear .18s !important;
+  }
+
+  body > .mobile-customizer.open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translate3d(0, 0, 0) !important;
+    transition:
+      transform .18s cubic-bezier(.2,.8,.2,1),
+      opacity .10s linear,
+      visibility 0s !important;
+  }
+
+  body > .mobile-customizer .mobile-drawer-handle {
+    width: 44px !important;
+    height: 4px !important;
+    flex: 0 0 auto !important;
+    margin: 8px auto 5px !important;
+    border-radius: 100px !important;
+    background: #d62828 !important;
+    box-shadow: 0 0 12px rgba(214, 40, 40, .35) !important;
+  }
+
+  body > .mobile-customizer .mobile-customizer-head {
+    flex: 0 0 auto !important;
+    padding: 7px 14px 9px !important;
+    min-height: auto !important;
+  }
+
+  body > .mobile-customizer .mobile-customizer-head small {
+    font-size: 7px !important;
+  }
+
+  body > .mobile-customizer .mobile-customizer-head strong {
+    font-size: 12px !important;
+  }
+
+  body > .mobile-customizer .mobile-category-tabs {
+    flex: 0 0 auto !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 7px 10px !important;
+  }
+
+  body > .mobile-customizer .mobile-category-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  body > .mobile-customizer .mobile-control-area {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body > .mobile-customizer button,
+  body > .mobile-customizer input,
+  body > .mobile-customizer select {
+    pointer-events: auto !important;
+    touch-action: manipulation;
+  }
+
+  /* Never hide the Three.js live preview while the drawer is open. */
+  .car-stage,
+  .car-stage canvas {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+@media (max-width: 430px) {
+  body > .mobile-customizer,
+  body > .mobile-customizer-backdrop {
+    height: 60dvh !important;
+    max-height: 60dvh !important;
+  }
+}
+
+@media (max-width: 760px) and (max-height: 680px) {
+  body > .mobile-customizer,
+  body > .mobile-customizer-backdrop {
+    height: 62dvh !important;
+    max-height: 62dvh !important;
+  }
+}
+
+/* =========================================================
+   FINAL MOBILE EDIT MODE — FULL CAR VISIBLE
+   This block intentionally stays LAST.
+   ========================================================= */
+
+@media (max-width: 760px) {
+  /* Give the live preview the upper half of the phone. */
+  .hero.mobile-editing .car-stage {
+    position: absolute !important;
+    inset: 92px 0 auto 0 !important;
+    width: 100% !important;
+    height: calc(48dvh - 92px) !important;
+    min-height: 245px !important;
+    max-height: 390px !important;
+    overflow: hidden !important;
+    z-index: 20 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .hero.mobile-editing .car-stage canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Keep view controls above the live car preview. */
+  .hero.mobile-editing .view-strip,
+  .hero.mobile-editing .view-controls,
+  .hero.mobile-editing .camera-strip {
+    z-index: 120 !important;
+  }
+
+  /* Hide hero copy/decoration that can cover the car only while editing. */
+  .hero.mobile-editing .hero-copy,
+  .hero.mobile-editing .hero-content,
+  .hero.mobile-editing .hero-scroll,
+  .hero.mobile-editing .hero-bottom-copy {
+    pointer-events: none !important;
+  }
+
+  /* Bottom half is the configurator. */
+  body > .mobile-customizer {
+    height: 52dvh !important;
+    max-height: 52dvh !important;
+  }
+
+  body > .mobile-customizer-backdrop {
+    height: 52dvh !important;
+    max-height: 52dvh !important;
+  }
+
+  body > .mobile-customizer.open {
+    transform: translate3d(0, 0, 0) !important;
+  }
+
+  /* More compact header = more room for options without covering preview. */
+  body > .mobile-customizer .mobile-customizer-head {
+    padding: 6px 12px 7px !important;
+  }
+
+  body > .mobile-customizer .mobile-category-tabs {
+    padding: 6px 8px !important;
+  }
+
+  body > .mobile-customizer .mobile-control-area {
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .hero.mobile-editing .car-stage {
+    inset: 88px 0 auto 0 !important;
+    height: calc(47dvh - 88px) !important;
+    min-height: 225px !important;
+  }
+
+  body > .mobile-customizer,
+  body > .mobile-customizer-backdrop {
+    height: 53dvh !important;
+    max-height: 53dvh !important;
+  }
+}
+
+@media (max-width: 760px) and (max-height: 700px) {
+  .hero.mobile-editing .car-stage {
+    inset: 82px 0 auto 0 !important;
+    height: calc(45dvh - 82px) !important;
+    min-height: 205px !important;
+  }
+
+  body > .mobile-customizer,
+  body > .mobile-customizer-backdrop {
+    height: 55dvh !important;
+    max-height: 55dvh !important;
+  }
+}
+
