@@ -6152,3 +6152,144 @@ body { background:#070809; }
   .nav-drive strong { font-size:6px !important; letter-spacing:1px !important; }
   .hero-controls-shell .hero-control { flex-basis:168px !important; width:168px !important; }
 }
+
+
+/* =========================================================
+   REQUESTED MOBILE HERO + MARQUEE FIXES — 2026-09-15
+   ========================================================= */
+
+/* Trust strip: seamless continuous LEFT -> RIGHT movement. */
+.trust-marquee {
+  width:calc(100% + 8vw) !important;
+  min-width:0 !important;
+  margin-left:-4vw !important;
+  margin-right:-4vw !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  display:block !important;
+  white-space:nowrap !important;
+  animation:none !important;
+}
+.trust-marquee-track {
+  width:max-content;
+  height:100%;
+  display:flex;
+  align-items:center;
+  will-change:transform;
+  animation:trustMarqueeLeftToRight 18s linear infinite;
+}
+.trust-marquee-group {
+  flex:none;
+  height:100%;
+  display:flex;
+  align-items:center;
+  gap:30px;
+  padding-right:30px;
+}
+.trust-marquee-group span {
+  flex:none;
+  color:inherit;
+  white-space:nowrap;
+}
+.trust-marquee-group i { flex:0 0 7px; }
+@keyframes trustMarqueeLeftToRight {
+  from { transform:translateX(-50%); }
+  to   { transform:translateX(0); }
+}
+
+/* Mobile hero commands stay around the car like desktop — no horizontal rail. */
+@media (max-width:760px) {
+  .hero-controls-shell {
+    position:absolute !important;
+    z-index:12 !important;
+    top:335px !important;
+    left:8px !important;
+    right:8px !important;
+    width:auto !important;
+    height:390px !important;
+    margin:0 !important;
+    pointer-events:none !important;
+  }
+  .hero-controls-shell .control-arrow { display:none !important; }
+  .hero-controls-shell .hero-controls {
+    width:100% !important;
+    height:100% !important;
+    padding:0 !important;
+    display:grid !important;
+    grid-template-columns:112px 112px !important;
+    grid-auto-rows:58px !important;
+    align-content:center !important;
+    justify-content:space-between !important;
+    column-gap:0 !important;
+    row-gap:7px !important;
+    overflow:visible !important;
+    border:0 !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+    scroll-snap-type:none !important;
+    pointer-events:none !important;
+  }
+  .hero-controls-shell .hero-control,
+  .hero-controls-shell .hero-control.drive-card {
+    pointer-events:auto !important;
+    flex:none !important;
+    width:112px !important;
+    min-width:112px !important;
+    height:58px !important;
+    min-height:58px !important;
+    padding:7px 7px !important;
+    display:grid !important;
+    grid-template-columns:20px minmax(0,1fr) !important;
+    grid-template-rows:auto auto !important;
+    column-gap:6px !important;
+    border-radius:7px !important;
+    scroll-snap-align:none !important;
+  }
+  .hero-controls-shell .hero-control .mini-part {
+    grid-row:1 / span 2 !important;
+    width:20px !important;
+    height:20px !important;
+    transform:scale(.58) !important;
+  }
+  .hero-controls-shell .hero-control small {
+    font-size:3.7px !important;
+    letter-spacing:.55px !important;
+    line-height:1.1 !important;
+    white-space:nowrap !important;
+  }
+  .hero-controls-shell .hero-control strong {
+    margin-top:2px !important;
+    font-size:5.5px !important;
+    letter-spacing:.2px !important;
+    line-height:1.15 !important;
+    white-space:normal !important;
+  }
+  .hero-controls-shell .hero-control em { display:none !important; }
+
+  .trust-marquee {
+    width:calc(100% + 36px) !important;
+    margin-left:-18px !important;
+    margin-right:-18px !important;
+  }
+  .trust-marquee-track { animation-duration:15s; }
+  .trust-marquee-group { gap:24px; padding-right:24px; }
+}
+
+@media (max-width:430px) {
+  .hero-controls-shell { top:320px !important; left:5px !important; right:5px !important; height:365px !important; }
+  .hero-controls-shell .hero-controls { grid-template-columns:102px 102px !important; row-gap:6px !important; }
+  .hero-controls-shell .hero-control,
+  .hero-controls-shell .hero-control.drive-card {
+    width:102px !important; min-width:102px !important; height:55px !important; min-height:55px !important;
+    padding:6px !important; grid-template-columns:18px minmax(0,1fr) !important; column-gap:5px !important;
+  }
+  .hero-controls-shell .hero-control .mini-part { width:18px !important; height:18px !important; transform:scale(.52) !important; }
+  .hero-controls-shell .hero-control small { font-size:3.35px !important; letter-spacing:.4px !important; }
+  .hero-controls-shell .hero-control strong { font-size:5px !important; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .trust-marquee-track { animation:none !important; transform:none !important; }
+}

@@ -554,7 +554,7 @@ function CarModel({
     const bodyColor =
       paintTone === "custom"
         ? customPaint
-        : PAINTS.find((paint) => paint.id === paintTone)?.hex ?? "#7B838A";
+        : PAINTS.find((paint) => paint.id === paintTone)?.hex ?? "#17263D";
 
     paintMaterials.current.forEach((material) => {
       material.color.set(bodyColor);
@@ -897,7 +897,7 @@ export default function App() {
   const [bootOpen, setBootOpen] = useState(false);
   const [engineOn, setEngineOn] = useState(false);
   const [driveMode, setDriveMode] = useState(false);
-  const [paintTone, setPaintTone] = useState("titanium");
+  const [paintTone, setPaintTone] = useState("midnight");
   const [customPaint, setCustomPaint] = useState("#FF5A1F");
   const [selectedMod, setSelectedMod] = useState("wheels");
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -1529,7 +1529,9 @@ export default function App() {
             </div>
             <p>Tap each workshop system to understand how the full build comes together.</p>
           </div>
-          <div className="swipe-shell content-swipe-shell">\n            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(systemsRef, -1)} aria-label="Previous garage systems">‹</button>\n            <div className="systems-grid" ref={systemsRef}>
+          <div className="swipe-shell content-swipe-shell">
+            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(systemsRef, -1)} aria-label="Previous garage systems">‹</button>
+            <div className="systems-grid" ref={systemsRef}>
             {[
               ["DYNO", "POWER VALIDATION", "Before/after power runs and safe map verification."],
               ["FITMENT", "WHEEL GEOMETRY", "Offset, clearance and stance checked before installation."],
@@ -1544,7 +1546,9 @@ export default function App() {
                 <b>TAP DETAILS ↗</b>
               </button>
             ))}
-                      </div>\n            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(systemsRef, 1)} aria-label="Next garage systems">›</button>\n          </div>
+                      </div>
+            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(systemsRef, 1)} aria-label="Next garage systems">›</button>
+          </div>
         </section>
 
         <section className="services-section" id="services">
@@ -1556,7 +1560,9 @@ export default function App() {
             <p>Clients can understand exactly what the workshop handles before they call — from simple fitment jobs to complete visual and performance builds.</p>
           </div>
 
-          <div className="swipe-shell content-swipe-shell">\n            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(servicesRef, -1)} aria-label="Previous workshop services">‹</button>\n            <div className="services-grid" ref={servicesRef}>
+          <div className="swipe-shell content-swipe-shell">
+            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(servicesRef, -1)} aria-label="Previous workshop services">‹</button>
+            <div className="services-grid" ref={servicesRef}>
             {SERVICES.map((service) => (
               <button
                 className="service-card"
@@ -1573,7 +1579,9 @@ export default function App() {
                 <b>OPEN FULL SCREEN ↗</b>
               </button>
             ))}
-                      </div>\n            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(servicesRef, 1)} aria-label="Next workshop services">›</button>\n          </div>
+                      </div>
+            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(servicesRef, 1)} aria-label="Next workshop services">›</button>
+          </div>
         </section>
 
         <section className="rate-section" id="rates">
@@ -1615,7 +1623,9 @@ export default function App() {
             </div>
             <p>These packages are conversation starters, not fixed bundles. Every build is adjusted to the vehicle and customer.</p>
           </div>
-          <div className="swipe-shell content-swipe-shell">\n            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(packagesRef, -1)} aria-label="Previous build package">‹</button>\n            <div className="package-grid" ref={packagesRef}>
+          <div className="swipe-shell content-swipe-shell">
+            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(packagesRef, -1)} aria-label="Previous build package">‹</button>
+            <div className="package-grid" ref={packagesRef}>
             {BUILD_PACKAGES.map((pkg, index) => (
               <article className={`package-card package-${index + 1}`} key={pkg.name}>
                 <span className="package-index">0{index + 1}</span>
@@ -1628,17 +1638,31 @@ export default function App() {
                 <a href="#contact">PLAN THIS BUILD <b>↗</b></a>
               </article>
             ))}
-                      </div>\n            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(packagesRef, 1)} aria-label="Next build package">›</button>\n          </div>
+                      </div>
+            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(packagesRef, 1)} aria-label="Next build package">›</button>
+          </div>
         </section>
 
         <section className="trust-section">
           <div className="trust-marquee" aria-hidden="true">
-            <span>FITMENT CHECK</span><i />
-            <span>ROAD-READY SETUP</span><i />
-            <span>CLEAR QUOTATION</span><i />
-            <span>PARTS GUIDANCE</span><i />
-            <span>FINAL INSPECTION</span><i />
-            <span>AFTERCARE SUPPORT</span><i />
+            <div className="trust-marquee-track">
+              <div className="trust-marquee-group">
+                <span>FITMENT CHECK</span><i />
+                <span>ROAD-READY SETUP</span><i />
+                <span>CLEAR QUOTATION</span><i />
+                <span>PARTS GUIDANCE</span><i />
+                <span>FINAL INSPECTION</span><i />
+                <span>AFTERCARE SUPPORT</span><i />
+              </div>
+              <div className="trust-marquee-group" aria-hidden="true">
+                <span>FITMENT CHECK</span><i />
+                <span>ROAD-READY SETUP</span><i />
+                <span>CLEAR QUOTATION</span><i />
+                <span>PARTS GUIDANCE</span><i />
+                <span>FINAL INSPECTION</span><i />
+                <span>AFTERCARE SUPPORT</span><i />
+              </div>
+            </div>
           </div>
           <div className="trust-grid">
             {[
@@ -1663,7 +1687,9 @@ export default function App() {
             <p>A simple client-first process so customers understand what happens before a single part is fitted.</p>
           </div>
 
-          <div className="swipe-shell content-swipe-shell">\n            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(processRef, -1)} aria-label="Previous build step">‹</button>\n            <div className="process-grid" ref={processRef}>
+          <div className="swipe-shell content-swipe-shell">
+            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(processRef, -1)} aria-label="Previous build step">‹</button>
+            <div className="process-grid" ref={processRef}>
             {[
               ["01", "DISCOVER", "Tell us your car, daily use, style, budget and what you want to improve."],
               ["02", "PLAN", "We shortlist compatible parts, discuss fitment and build a clear staged recommendation."],
@@ -1678,7 +1704,9 @@ export default function App() {
                 <b>VIEW STEP ↗</b>
               </button>
             ))}
-                      </div>\n            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(processRef, 1)} aria-label="Next build step">›</button>\n          </div>
+                      </div>
+            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(processRef, 1)} aria-label="Next build step">›</button>
+          </div>
         </section>
 
         <section className="client-section">
