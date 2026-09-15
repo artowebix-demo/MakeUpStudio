@@ -1,1794 +1,2057 @@
-import React, {
-  Suspense,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import {
-  Environment,
-  Html,
-  useGLTF,
-  useProgress,
-} from "@react-three/drei";
+import { ContactShadows, Environment, Html, RoundedBox, useGLTF, useProgress } from "@react-three/drei";
 import * as THREE from "three";
 import "./styles.css";
 
-const CAR_MODEL_URL = `${import.meta.env.BASE_URL}models/performance-sedan.glb`;
+const CAR_MODEL_URL = `${import.meta.env.BASE_URL}models/car_Mistery_Porsche.glb`;
 
 const PAINTS = [
-  { id: "titanium", name: "TITANIUM SILVER", hex: "#7B838A" },
-  { id: "gunmetal", name: "GUNMETAL GREY", hex: "#454B50" },
-  { id: "obsidian", name: "OBSIDIAN BLACK", hex: "#16181A" },
-  { id: "sapphire", name: "SAPPHIRE BLUE", hex: "#174A78" },
-  { id: "midnight", name: "MIDNIGHT BLUE", hex: "#17263D" },
-  { id: "emerald", name: "EMERALD GREEN", hex: "#1B5B48" },
-  { id: "bronze", name: "BRUSHED BRONZE", hex: "#6A4C2F" },
-  { id: "copper", name: "COPPER ORANGE", hex: "#A84F24" },
-  { id: "crimson", name: "CRIMSON RED", hex: "#8B1F2D" },
-  { id: "violet", name: "VIOLET STEEL", hex: "#4D3B66" },
+  { id: "silver", name: "ARCTIC SILVER", hex: "#aeb3b6" },
+  { id: "white", name: "PORCELAIN", hex: "#e7e5df" },
+  { id: "black", name: "OBSIDIAN", hex: "#090a0b" },
+  { id: "graphite", name: "GRAPHITE", hex: "#34383d" },
+  { id: "sapphire", name: "SAPPHIRE", hex: "#153e94" },
+  { id: "navy", name: "MIDNIGHT BLUE", hex: "#101c36" },
+  { id: "crimson", name: "CRIMSON", hex: "#7e1422" },
+  { id: "racingred", name: "RACING RED", hex: "#a51618" },
+  { id: "forest", name: "FOREST", hex: "#163f31" },
+  { id: "emerald", name: "EMERALD", hex: "#07543e" },
+  { id: "copper", name: "COPPER", hex: "#8d472a" },
+  { id: "champagne", name: "CHAMPAGNE", hex: "#9a7b50" },
+  { id: "violet", name: "DEEP VIOLET", hex: "#402c62" },
 ];
 
-const MODS = [
+const FINISHES = [
+  { id: "solid", name: "SOLID", metalness: .12, roughness: .24, clearcoat: .9 },
+  { id: "metallic", name: "METALLIC", metalness: .78, roughness: .19, clearcoat: 1 },
+  { id: "matte", name: "MATTE", metalness: .18, roughness: .72, clearcoat: .06 },
+  { id: "satin", name: "SATIN", metalness: .42, roughness: .46, clearcoat: .28 },
+  { id: "pearl", name: "PEARL", metalness: .58, roughness: .16, clearcoat: 1 },
+];
+
+const RIMS = [
+  { id: "oem", name: "OEM GRAPHITE", hex: "#24272b", metalness: .56, roughness: .44, env: .24 },
+  { id: "black", name: "SATIN BLACK", hex: "#070809", metalness: .42, roughness: .52, env: .18 },
+  { id: "gunmetal", name: "DARK GUNMETAL", hex: "#30343a", metalness: .62, roughness: .40, env: .24 },
+  { id: "titanium", name: "TITANIUM", hex: "#666b70", metalness: .68, roughness: .36, env: .28 },
+  { id: "silver", name: "FORGED SILVER", hex: "#9aa0a5", metalness: .72, roughness: .32, env: .30 },
+  { id: "bronze", name: "FORGED BRONZE", hex: "#5b4029", metalness: .58, roughness: .42, env: .22 },
+  { id: "gold", name: "CHAMPAGNE", hex: "#9a7740", metalness: .62, roughness: .38, env: .24 },
+  { id: "white", name: "CERAMIC WHITE", hex: "#d9d9d4", metalness: .34, roughness: .42, env: .24 },
+];
+
+const CALIPERS = [
+  { id: "red", name: "RACING RED", hex: "#d4141d" },
+  { id: "yellow", name: "ACID YELLOW", hex: "#f0bd18" },
+  { id: "blue", name: "ELECTRIC BLUE", hex: "#155bda" },
+  { id: "orange", name: "ORANGE", hex: "#ef6c19" },
+  { id: "lime", name: "LIME", hex: "#82d522" },
+  { id: "silver", name: "SILVER", hex: "#a8adb1" },
+  { id: "white", name: "WHITE", hex: "#e7e7e2" },
+  { id: "black", name: "BLACK", hex: "#111214" },
+];
+
+const TINTS = [
+  { id: "clear", name: "CLEAR", opacity: .50 },
+  { id: "smoke", name: "SMOKE", opacity: .32 },
+  { id: "dark", name: "DARK", opacity: .19 },
+  { id: "limo", name: "LIMO", opacity: .10 },
+];
+
+const CATEGORIES = [
+  ["paint", "✦", "PAINT"],
+  ["wheels", "◉", "WHEELS"],
+  ["brakes", "◎", "BRAKES"],
+  ["suspension", "↕", "STANCE"],
+  ["aero", "◢", "AERO"],
+  ["glass", "▱", "GLASS"],
+  ["carbon", "▥", "CARBON"],
+  ["lights", "☼", "LIGHTS"],
+];
+
+
+const BUILD_PRESETS = [
   {
-    id: "wheels",
-    number: "01",
-    title: "FORGED WHEELS",
-    tag: "UNSPRUNG MASS",
-    price: "FROM ₹48K",
-    icon: "wheel",
-    text: "Lightweight forged wheel packages with aggressive fitment, stronger road presence and sharper response.",
+    id: "oemplus",
+    name: "OEM+",
+    description: "Factory elegance with a sharper stance.",
+    paint: "silver", finish: "metallic", rim: "titanium",
+    caliper: "silver", tint: "smoke", carbon: false,
+    stance: .18, aero: { wing:false, lip:true, skirts:false, diffuser:false },
   },
   {
-    id: "brakes",
-    number: "02",
-    title: "BIG BRAKE KIT",
-    tag: "STOPPING POWER",
-    price: "FROM ₹65K",
-    icon: "brake",
-    text: "Performance rotors, pads and caliper packages designed for repeated hard braking and better pedal feel.",
+    id: "stealth",
+    name: "Stealth",
+    description: "Dark, restrained and technical.",
+    paint: "black", finish: "satin", rim: "black",
+    caliper: "red", tint: "dark", carbon: true,
+    stance: .34, aero: { wing:false, lip:true, skirts:true, diffuser:true },
   },
   {
-    id: "lighting",
-    number: "03",
-    title: "LED SIGNATURE",
-    tag: "VISION SYSTEM",
-    price: "FROM ₹18K",
-    icon: "light",
-    text: "Sharper projector lighting, signature LEDs and clean visual upgrades that transform the front profile.",
+    id: "street",
+    name: "Street Performance",
+    description: "Aggressive road-focused configuration.",
+    paint: "crimson", finish: "metallic", rim: "gunmetal",
+    caliper: "yellow", tint: "smoke", carbon: true,
+    stance: .42, aero: { wing:true, lip:true, skirts:true, diffuser:true },
   },
   {
-    id: "exhaust",
-    number: "04",
-    title: "VALVED EXHAUST",
-    tag: "SOUND / FLOW",
-    price: "FROM ₹32K",
-    icon: "exhaust",
-    text: "Street-friendly when closed, dramatic when open. Tuned systems for sound, response and flow.",
+    id: "luxury",
+    name: "Grand Touring",
+    description: "Premium finish with understated details.",
+    paint: "navy", finish: "pearl", rim: "silver",
+    caliper: "silver", tint: "smoke", carbon: false,
+    stance: .14, aero: { wing:false, lip:false, skirts:false, diffuser:false },
   },
-  {
-    id: "suspension",
-    number: "05",
-    title: "COILOVER SETUP",
-    tag: "STANCE / CONTROL",
-    price: "FROM ₹42K",
-    icon: "spring",
-    text: "Dial in ride height, stance and handling with performance suspension matched to the way you drive.",
-  },
-  {
-    id: "aero",
-    number: "06",
-    title: "AERO PACKAGE",
-    tag: "FORM / FUNCTION",
-    price: "FROM ₹55K",
-    icon: "aero",
-    text: "Splitters, side skirts, diffusers and wings shaped around a cleaner and more aggressive silhouette.",
-  },
-  {
-    id: "intake",
-    number: "07",
-    title: "COLD AIR INTAKE",
-    tag: "AIR / RESPONSE",
-    price: "FROM ₹24K",
-    icon: "intake",
-    text: "High-flow intake hardware designed to sharpen throttle response and feed the engine with cooler air.",
-  },
-  {
-    id: "ecu",
-    number: "08",
-    title: "ECU CALIBRATION",
-    tag: "POWER MAP",
-    price: "FROM ₹38K",
-    icon: "ecu",
-    text: "Custom software calibration for smoother delivery, stronger mid-range response and selectable maps.",
-  },
-  {
-    id: "tyres",
-    number: "09",
-    title: "PERFORMANCE TYRES",
-    tag: "GRIP / TRACTION",
-    price: "FROM ₹52K",
-    icon: "wheel",
-    text: "High-grip road and track tyre packages matched to wheel width, suspension geometry and driving style.",
-  },
-  {
-    id: "bodykit",
-    number: "10",
-    title: "WIDEBODY SYSTEM",
-    tag: "STANCE / BODY",
-    price: "FROM ₹1.2L",
-    icon: "aero",
-    text: "Integrated arches, side profiles and bumper extensions for a wider, lower and more purposeful stance.",
-  },
-  {
-    id: "interior",
-    number: "11",
-    title: "COCKPIT PACKAGE",
-    tag: "DRIVER / CABIN",
-    price: "FROM ₹45K",
-    icon: "interior",
-    text: "Steering, seat, trim and ambient upgrades that turn the cabin into a more focused driver environment.",
-  },
-  {
-    id: "protection",
-    number: "12",
-    title: "PPF + CERAMIC",
-    tag: "FINISH / PROTECT",
-    price: "FROM ₹60K",
-    icon: "shield",
-    text: "Paint protection film and ceramic finish systems for gloss, easier maintenance and daily protection.",
-  },
+];
+
+const AERO_PRESETS = [
+  ["stock","Stock","Factory bodywork",{ wing:false, lip:false, skirts:false, diffuser:false }],
+  ["street","Street","Front lip + side skirts",{ wing:false, lip:true, skirts:true, diffuser:false }],
+  ["sport","Sport","Balanced full aero",{ wing:false, lip:true, skirts:true, diffuser:true }],
+  ["track","Track","Maximum visual aero",{ wing:true, lip:true, skirts:true, diffuser:true }],
+];
+
+const CATEGORY_INFO = {
+  paint:{title:"Body Colour",description:"Choose colour & finish",accent:"#C7A66B"},
+  wheels:{title:"Wheels",description:"Rim finish & wheel preview",accent:"#AEB7C0"},
+  brakes:{title:"Brake Calipers",description:"Add a performance accent",accent:"#B94D4D"},
+  suspension:{title:"Ride Height",description:"Adjust stance & steering",accent:"#8EA79A"},
+  aero:{title:"Aero Package",description:"Wing, lip, skirts & diffuser",accent:"#C1B6A4"},
+  glass:{title:"Window Tint",description:"Choose your tint level",accent:"#708696"},
+  carbon:{title:"Carbon Fibre",description:"Performance material finish",accent:"#5F6468"},
+  lights:{title:"Lighting",description:"Workshop & vehicle lighting",accent:"#E2C27B"},
+};
+
+const UPGRADES = [
+  ["01", "FORGED WHEELS", "UNSPRUNG MASS", "₹48,000", "◉"],
+  ["02", "BIG BRAKE KIT", "STOPPING POWER", "₹65,000", "◎"],
+  ["03", "LED SIGNATURE", "VISION SYSTEM", "₹18,000", "◈"],
+  ["04", "VALVED EXHAUST", "SOUND / FLOW", "₹32,000", "▰"],
+  ["05", "COILOVER SETUP", "STANCE / CONTROL", "₹42,000", "↕"],
+  ["06", "AERO PACKAGE", "FORM / FUNCTION", "₹55,000", "◢"],
 ];
 
 const SERVICES = [
-  { code: "01", title: "WHEELS & TYRES", text: "Alloy and forged wheel upgrades, tyre selection, balancing, hub rings, spacers and fitment planning.", icon: "wheel" },
-  { code: "02", title: "SUSPENSION & STANCE", text: "Lowering springs, coilovers, ride-height setup, alignment and road-friendly stance tuning.", icon: "spring" },
-  { code: "03", title: "BRAKE UPGRADES", text: "Performance pads, rotors, braided lines, fluids and big-brake packages for stronger, repeatable braking.", icon: "brake" },
-  { code: "04", title: "EXHAUST & SOUND", text: "Axle-back, cat-back and valved systems, tips and custom fabrication focused on tone, flow and finish.", icon: "exhaust" },
-  { code: "05", title: "INTAKE & ENGINE BAY", text: "High-flow filters, cold-air intake systems, dress-up parts and carefully planned engine-bay upgrades.", icon: "intake" },
-  { code: "06", title: "ECU & PERFORMANCE", text: "Vehicle-specific ECU calibration, response tuning and supporting hardware recommendations where suitable.", icon: "ecu" },
-  { code: "07", title: "LIGHTING", text: "Projector upgrades, LED signatures, fog lamps, cabin ambient lighting and clean wiring integration.", icon: "light" },
-  { code: "08", title: "BODY & AERO", text: "Splitters, skirts, diffusers, spoilers, widebody components and exterior styling installation.", icon: "aero" },
-  { code: "09", title: "INTERIOR CUSTOM", text: "Steering, trim, upholstery accents, ambient lighting and driver-focused cabin upgrades.", icon: "interior" },
-  { code: "10", title: "WRAP / PPF / CERAMIC", text: "Colour-change wraps, paint-protection film and ceramic protection to finish and preserve the build.", icon: "shield" },
-  { code: "11", title: "ALIGNMENT & FITMENT", text: "Wheel clearance checks, alignment, ride-height verification and final fitment inspection after modification.", icon: "wheel" },
-  { code: "12", title: "CUSTOM BUILD CONSULT", text: "A complete modification roadmap built around your vehicle, usage, style, priorities and budget.", icon: "ecu" },
+  ["PRECISION FITMENT", "Wheel width, offset, tyre profile and clearance checked before installation."],
+  ["PERFORMANCE SETUP", "Suspension, brakes and alignment configured around how the car is actually used."],
+  ["CUSTOM FABRICATION", "Aero, exhaust and styling components installed with an OEM-level visual finish."],
+  ["FINISH & PROTECTION", "Wrap, PPF and ceramic options to complete and protect the finished build."],
 ];
 
-const RATE_CARD = [
-  ["Build consultation", "₹999", "Vehicle + goals review"],
-  ["Diagnostic inspection", "₹1,499", "Pre-build health check"],
-  ["Wheel fitment package", "₹2,999", "Fitment + balance check"],
-  ["Performance alignment", "₹3,499", "Road / stance setup"],
-  ["Lowering spring install", "₹6,999", "Labour from"],
-  ["Coilover installation", "₹9,999", "Setup labour from"],
-  ["Brake pad upgrade labour", "₹3,499", "Per axle from"],
-  ["Big-brake kit installation", "₹9,999", "Labour from"],
-  ["Cat-back exhaust install", "₹4,999", "Bolt-on labour from"],
-  ["Custom exhaust fabrication", "₹12,999", "Fabrication from"],
-  ["LED / projector install", "₹2,499", "Labour from"],
-  ["Body kit installation", "₹14,999", "Fitment labour from"],
-  ["Interior ambient lighting", "₹8,999", "Package from"],
-  ["ECU calibration", "₹24,999", "Vehicle dependent"],
-  ["PPF package", "₹55,000", "Coverage dependent"],
-  ["Ceramic protection", "₹18,000", "Package from"],
+const PACKAGES = [
+  ["DAILY+", "CLEAN / COMFORTABLE", "₹65K", ["Wheels / tyres", "Mild stance", "Lighting refresh", "Alignment"]],
+  ["STREET SPORT", "LOOK / SOUND / RESPONSE", "₹1.65L", ["Forged wheels", "Coilovers", "Valved exhaust", "Brake upgrade"]],
+  ["SHOW SPEC", "VISUAL IMPACT", "₹2.75L", ["Carbon aero", "Aggressive fitment", "Lighting / interior", "Protection"]],
 ];
 
-const BUILD_PACKAGES = [
-  {
-    name: "DAILY+",
-    tag: "CLEAN / COMFORTABLE",
-    price: "FROM ₹65K",
-    items: ["Wheels / tyres", "Mild stance", "Lighting refresh", "Alignment & fitment"],
-  },
-  {
-    name: "STREET SPORT",
-    tag: "LOOK / SOUND / RESPONSE",
-    price: "FROM ₹1.65L",
-    items: ["Wheel package", "Coilovers", "Valved exhaust", "Intake / braking"],
-  },
-  {
-    name: "SHOW SPEC",
-    tag: "VISUAL IMPACT",
-    price: "FROM ₹2.75L",
-    items: ["Aero / body", "Aggressive fitment", "Lighting / interior", "Wrap / protection"],
-  },
+const WORKSHOP_CAPABILITIES = [
+  ["01", "3D BUILD PREVIEW", "SEE IT FIRST", "Configure the visual direction before discussing the physical build.", "◎"],
+  ["02", "FITMENT ENGINEERING", "MEASURE TWICE", "Wheel, tyre, stance and clearance decisions planned as one system.", "⌁"],
+  ["03", "PERFORMANCE BAY", "DRIVE BETTER", "Brakes, suspension and supporting upgrades selected around real use.", "⚙"],
+  ["04", "DETAIL STUDIO", "FINISH MATTERS", "Paint direction, carbon, tint and protection brought into one visual language.", "✦"],
+];
+
+const BUILD_STEPS = [
+  ["01", "DISCOVER", "Tell us the car, the goal, the daily use and the budget."],
+  ["02", "VISUALIZE", "Use the live configurator to establish colour, stance and styling direction."],
+  ["03", "ENGINEER", "We check compatibility, fitment, practical clearance and installation scope."],
+  ["04", "BUILD", "Approved parts are installed, aligned and visually finished as one package."],
+  ["05", "HANDOVER", "Final inspection, setup explanation and a clear route for future upgrades."],
+];
+
+const STATS = [
+  ["300+", "PERFORMANCE PARTS"],
+  ["50+", "PREMIUM BRANDS"],
+  ["8", "LIVE EDITABLE SYSTEMS"],
+  ["360°", "INTERACTIVE PREVIEW"],
+];
+
+const GALLERY_IMAGES = [
+  { src: `${import.meta.env.BASE_URL}gallery/build-01.jpg`, title: "MIDNIGHT GT", tag: "WHEELS / STANCE / AERO" },
+  { src: `${import.meta.env.BASE_URL}gallery/build-02.jpg`, title: "URBAN SPEC", tag: "PAINT / BRAKES / DETAIL" },
+  { src: `${import.meta.env.BASE_URL}gallery/build-03.jpg`, title: "TRACK INSPIRED", tag: "CARBON / AERO / FITMENT" },
+  { src: `${import.meta.env.BASE_URL}gallery/build-04.jpg`, title: "BLACK SERIES", tag: "SATIN / TINT / WHEELS" },
+  { src: `${import.meta.env.BASE_URL}gallery/build-05.jpg`, title: "SHOWROOM ONE", tag: "FULL VISUAL PACKAGE" },
+  { src: `${import.meta.env.BASE_URL}gallery/build-06.jpg`, title: "STREET FORM", tag: "DAILY / PERFORMANCE" },
 ];
 
 const FAQS = [
-  ["Can I modify a daily-driven car?", "Yes. The build can be planned around comfort, reliability and daily road use instead of maximum aggression."],
-  ["Do I need to modify everything at once?", "No. A staged build can begin with wheels, tyres or suspension and expand later into braking, exhaust, lighting and aero."],
-  ["How do you choose compatible parts?", "Vehicle specification, fitment, clearance, intended use and the overall build direction are considered before parts are approved."],
-  ["Can the workshop build around a budget?", "Yes. A budget range helps prioritise the upgrades that create the strongest visual or driving improvement first."],
-  ["Can I focus only on appearance?", "Yes. Cosmetic builds can centre on wheels, stance, lighting, aero, interior trim and paint protection without performance tuning."],
-  ["Will lowering my car make it uncomfortable?", "Not necessarily. Spring rate, damper setup, tyre profile and ride height can be chosen to keep a road-friendly balance."],
-  ["Can you help me choose wheel size and offset?", "Yes. Fitment planning considers wheel width, offset, tyre size, suspension clearance and the look you want."],
-  ["Do performance upgrades need supporting hardware?", "Sometimes. Intake, exhaust, cooling, tyres or braking may be recommended before or alongside power-focused upgrades."],
-  ["Can I bring my own parts?", "That can be discussed before booking. Parts should be verified for quality, compatibility and completeness before installation."],
-  ["How long does a modification build take?", "Timing depends on parts availability and job complexity. Simple fitment may take hours, while fabrication or complete builds can take several days."],
-  ["Do you offer paint protection after modification?", "Yes. PPF and ceramic options can be planned after body, aero and detailing work so the finished build is easier to maintain."],
-  ["Can I plan future upgrades before I start?", "Yes. A staged roadmap can prevent duplicated labour and help make sure wheels, suspension, brakes, power and aero work together."],
+  ["Can I see modifications live?", "Yes. Paint, wheel finish, brake colour, tint, stance and supported aero parts update directly on the 3D model."],
+  ["Are the prices final?", "No. The configurator gives an indicative build value. Final pricing depends on the exact vehicle, parts and installation scope."],
+  ["Can I build in stages?", "Yes. Save the visual direction first, then split the real build into sensible stages."],
+  ["Will it work on mobile?", "Yes. The configurator uses swipe-friendly controls, touch rotation and responsive panels."],
+  ["Can the garage build around my budget?", "Yes. Start with the upgrades that create the biggest visual or driving improvement, then expand later."],
 ];
-
-function PartIcon({ type }) {
-  if (type === "wheel") {
-    return (
-      <div className="part-icon part-wheel" aria-hidden="true">
-        <span className="wheel-rim" />
-        <span className="wheel-hub" />
-      </div>
-    );
-  }
-
-  if (type === "brake") {
-    return (
-      <div className="part-icon part-brake" aria-hidden="true">
-        <span className="brake-disc" />
-        <span className="brake-caliper" />
-      </div>
-    );
-  }
-
-  if (type === "exhaust") {
-    return (
-      <div className="part-icon part-exhaust" aria-hidden="true">
-        <span />
-        <span />
-      </div>
-    );
-  }
-
-  if (type === "spring") {
-    return (
-      <div className="part-icon part-spring" aria-hidden="true">
-        <span />
-      </div>
-    );
-  }
-
-  if (type === "aero") {
-    return (
-      <div className="part-icon part-aero" aria-hidden="true">
-        <span />
-      </div>
-    );
-  }
-
-  if (type === "intake") {
-    return <div className="part-icon part-intake" aria-hidden="true"><span /><span /></div>;
-  }
-
-  if (type === "ecu") {
-    return <div className="part-icon part-ecu" aria-hidden="true"><span>ECU</span></div>;
-  }
-
-  if (type === "interior") {
-    return <div className="part-icon part-interior" aria-hidden="true"><span /><span /></div>;
-  }
-
-  if (type === "shield") {
-    return <div className="part-icon part-shield" aria-hidden="true"><span /></div>;
-  }
-
-  return (
-    <div className="part-icon part-light" aria-hidden="true">
-      <span />
-      <span />
-      <span />
-    </div>
-  );
-}
-
-
-function HeaderCarLogo() {
-  return (
-    <span className="header-car-logo" aria-hidden="true">
-      <svg viewBox="0 0 64 40">
-        <path className="logo-shield" d="M32 3 55 10v10.5C55 30.8 46.4 36.3 32 39 17.6 36.3 9 30.8 9 20.5V10L32 3Z" />
-        <path className="logo-speed-line logo-speed-one" d="M5 15h13" />
-        <path className="logo-speed-line logo-speed-two" d="M2 21h14" />
-        <path className="logo-speed-line logo-speed-three" d="M6 27h11" />
-        <path className="logo-am" d="M20 28 27.5 12h5L39 28h-4.8l-1.4-3.6h-6.6L24.8 28H20Zm7.5-7.5h4l-2-5.2-2 5.2ZM40.5 28V12h4.2l5 7.2 5-7.2h4.2v16h-4.5v-9l-4.7 6.5-4.7-6.5v9h-4.5Z" />
-        <path className="logo-road" d="M23 32h18" />
-      </svg>
-    </span>
-  );
-}
-
-function HeaderLightIcon({ active }) {
-  return (
-    <span className={`header-light-icon ${active ? "active" : ""}`} aria-hidden="true">
-      <svg viewBox="0 0 38 38">
-        <path className="light-lamp" d="M7.5 19c0-6.3 5.1-11.5 11.5-11.5S30.5 12.7 30.5 19c0 4-2 7-5.2 9.1H12.7C9.5 26 7.5 23 7.5 19Z" />
-        <path className="light-base" d="M13.5 28h11M15.5 31.5h7" />
-        <path className="light-ray" d="M19 2v3M5.5 6.5l3 3M32.5 6.5l-3 3M1.5 19h4M32.5 19h4" />
-      </svg>
-    </span>
-  );
-}
-
-function HeaderDriveIcon({ returning }) {
-  return (
-    <span className={`header-drive-icon ${returning ? "returning" : ""}`} aria-hidden="true">
-      <svg viewBox="0 0 46 34">
-        <path className="drive-road-icon" d="M4 27h38" />
-        <path className="drive-car-icon" d="M8 22.5 12 16h5l4.5-5h10l5.5 5h3l3 6.5H8Z" />
-        <circle className="drive-wheel-icon" cx="15" cy="24.5" r="3.5" />
-        <circle className="drive-wheel-icon" cx="36" cy="24.5" r="3.5" />
-        {returning ? (
-          <path className="drive-action-icon" d="M27 6h-9m0 0 4-4m-4 4 4 4" />
-        ) : (
-          <path className="drive-action-icon" d="M18 6h9m0 0-4-4m4 4-4 4" />
-        )}
-      </svg>
-    </span>
-  );
-}
 
 function Loader() {
   const { progress } = useProgress();
-
   return (
     <Html center>
-      <div className="car-loader">
-        <div className="loader-wheel">
-          <span />
-        </div>
-        <strong>{Math.round(progress)}%</strong>
-        <small>LOADING PERFORMANCE MACHINE</small>
+      <div className="loader">
+        <span>{Math.round(progress)}%</span>
+        <small>LOADING DRIVE MODS</small>
       </div>
     </Html>
   );
 }
 
-function CameraRig({ driveMode }) {
+function CameraRig({ view, zoom }) {
   const { camera, size } = useThree();
   const mobile = size.width < 760;
-  const heroCameraDesktop = useMemo(() => new THREE.Vector3(6.4, 2.15, 7.4), []);
-  const heroCameraMobile = useMemo(() => new THREE.Vector3(6.9, 2.35, 10.8), []);
-  const driveCameraDesktop = useMemo(() => new THREE.Vector3(0, 1.65, 10.6), []);
-  const driveCameraMobile = useMemo(() => new THREE.Vector3(0, 1.95, 13.4), []);
+
+  const positions = useMemo(() => ({
+    "360": mobile ? [7.45, 2.20, 9.80] : [5.95, 1.78, 7.10],
+    front: mobile ? [0, 1.25, 10.2] : [0, 1.05, 7.7],
+    rear: mobile ? [0, 1.35, -10.2] : [0, 1.1, -7.7],
+    left: mobile ? [-9.5, 1.45, 0] : [-7.3, 1.25, 0],
+    right: mobile ? [9.5, 1.45, 0] : [7.3, 1.25, 0],
+    top: mobile ? [0, 11, .1] : [0, 9, .1],
+    wheels: mobile ? [6.4, .85, 7.4] : [5.0, .65, 5.2],
+    brakes: mobile ? [5.9, .75, 7.0] : [4.6, .55, 4.8],
+    aero: mobile ? [-6.6, 1.2, -7.4] : [-5.1, 1.0, -5.2],
+    glass: mobile ? [6.0, 2.7, 7.4] : [4.7, 2.25, 5.4],
+  }), [mobile]);
 
   useFrame(() => {
-    const heroCamera = mobile ? heroCameraMobile : heroCameraDesktop;
-    const driveCamera = mobile ? driveCameraMobile : driveCameraDesktop;
-    camera.position.lerp(driveMode ? driveCamera : heroCamera, driveMode ? 0.07 : 0.06);
-    camera.lookAt(0, driveMode ? -0.55 : -0.3, 0);
+    const base = new THREE.Vector3(...(positions[view] || positions["360"]));
+    // Keep enough framing margin for the COMPLETE vehicle.
+    // Zoom now has a wider useful range instead of starting too close.
+    base.multiplyScalar(THREE.MathUtils.lerp(1.00, .78, zoom));
+    camera.position.lerp(base, .065);
+    camera.lookAt(0, view === "top" ? -.2 : -.35, 0);
     camera.updateProjectionMatrix();
   });
+  return null;
+}
+
+function PerformanceController({ lightsOn }) {
+  const { gl, size } = useThree();
+
+  useEffect(() => {
+    const mobile = size.width <= 760;
+    const tablet = size.width <= 1100;
+
+    // Keep desktop crisp, but avoid rendering millions of unnecessary
+    // pixels on high-DPI phones/tablets.
+    const maxDpr = mobile ? 1.2 : tablet ? 1.4 : 1.65;
+    gl.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
+
+    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.toneMappingExposure = lightsOn ? 1.08 : .72;
+    gl.outputColorSpace = THREE.SRGBColorSpace;
+    gl.shadowMap.enabled = true;
+    gl.shadowMap.type = THREE.PCFSoftShadowMap;
+  }, [gl, size.width, lightsOn]);
 
   return null;
 }
 
-function findObjectByKeywords(root, keywords) {
-  let result = null;
-
-  root.traverse((object) => {
-    if (result) return;
-    const name = (object.name || "").toLowerCase();
-    if (keywords.some((keyword) => name.includes(keyword))) {
-      result = object;
-    }
-  });
-
-  return result;
-}
-
 function CarModel({
-  rotation,
-  leftDoorOpen,
-  rightDoorOpen,
-  wheelsMoving,
-  headlights,
-  bonnetOpen,
-  bootOpen,
-  engineOn,
-  driveMode,
-  paintTone,
-  customPaint,
-  onPartClick,
-  onCapabilities,
-  isMobile,
+  rotation, autoRotate, lightsOn, paintTone, customPaint, finish, rim, customRimColor,
+  caliper, customCaliperColor, tint, carbon, aero, stance, steering, wheelSpin, before,
+  lightColor, lightIntensity, paintGloss, metallicBoost, rimScale, caliperGloss, carbonFinish, beforeMode
 }) {
   const group = useRef();
   const { scene } = useGLTF(CAR_MODEL_URL);
-  const carScene = useMemo(() => scene.clone(true), [scene]);
-
-  const leftDoorPivot = useRef(null);
-  const rightDoorPivot = useRef(null);
-  const bonnetPivot = useRef(null);
-  const bootPivot = useRef(null);
-  const wheelPivots = useRef([]);
-  const lightMaterials = useRef([]);
-  const paintMaterials = useRef([]);
-  const driveProgress = useRef(0);
+  const car = useMemo(() => scene.clone(true), [scene]);
+  const paints = useRef([]);
+  const rims = useRef([]);
+  const wheelInners = useRef([]);
+  const calipers = useRef([]);
+  const glasses = useRef([]);
+  const carbons = useRef([]);
+  const emissives = useRef([]);
+  const wheelRotators = useRef([]);
+  const frontSteer = useRef([]);
+  const aeroObjects = useRef({});
 
   useEffect(() => {
-    carScene.updateMatrixWorld(true);
+    paints.current = [];
+    rims.current = [];
+    wheelInners.current = [];
+    calipers.current = [];
+    glasses.current = [];
+    carbons.current = [];
+    emissives.current = [];
 
-    const createPivot = (object, worldPosition) => {
-      if (!object || !object.parent) return null;
+    wheelRotators.current = [
+      "bone_wheel_FL_rotation", "bone_wheel_FR_rotation",
+      "bone_wheel_BL_rotation", "bone_wheel_BR_rotation",
+    ].map(n => car.getObjectByName(n)).filter(Boolean);
 
-      const pivot = new THREE.Group();
-      pivot.name = `${object.name}_WEB_PIVOT`;
+    frontSteer.current = [
+      "bone_wheel_FL_steer", "bone_wheel_FR_steer",
+    ].map(n => car.getObjectByName(n)).filter(Boolean);
 
-      const rootInverse = new THREE.Matrix4()
-        .copy(carScene.matrixWorld)
-        .invert();
-      const localPosition = worldPosition
-        .clone()
-        .applyMatrix4(rootInverse);
-
-      pivot.position.copy(localPosition);
-      carScene.add(pivot);
-      carScene.updateMatrixWorld(true);
-      pivot.attach(object);
-      return pivot;
+    aeroObjects.current = {
+      wing: car.getObjectByName("detach_wing_20"),
+      lip: car.getObjectByName("detach_lip_20"),
+      skirtL: car.getObjectByName("detach_skirt_L_5"),
+      skirtR: car.getObjectByName("detach_skirt_R_5"),
+      diffuser: car.getObjectByName("detach_diffuser_10"),
     };
 
-    const leftDoor = carScene.getObjectByName("DOOR_L");
-    const rightDoor = carScene.getObjectByName("DOOR_R");
+    car.traverse(obj => {
+      if (!obj.isMesh) return;
+      obj.castShadow = true;
+      obj.receiveShadow = true;
+      const name = (obj.name || "").toLowerCase();
+      const source = Array.isArray(obj.material) ? obj.material : [obj.material];
+      const cloned = source.map(mat => {
+        if (!mat) return mat;
+        const m = mat.clone();
+        const mn = (m.name || "").toLowerCase();
 
-    if (leftDoor) {
-      const box = new THREE.Box3().setFromObject(leftDoor);
-      const center = box.getCenter(new THREE.Vector3());
-      const hinge = new THREE.Vector3(box.max.x, center.y, box.max.z);
-      leftDoorPivot.current = createPivot(leftDoor, hinge);
-    }
-
-    if (rightDoor) {
-      const box = new THREE.Box3().setFromObject(rightDoor);
-      const center = box.getCenter(new THREE.Vector3());
-      const hinge = new THREE.Vector3(box.min.x, center.y, box.max.z);
-      rightDoorPivot.current = createPivot(rightDoor, hinge);
-    }
-
-    const bonnet = findObjectByKeywords(carScene, ["bonnet", "hood"]);
-    const boot = findObjectByKeywords(carScene, ["boot", "trunk", "decklid"]);
-
-    if (bonnet) {
-      const box = new THREE.Box3().setFromObject(bonnet);
-      const center = box.getCenter(new THREE.Vector3());
-      const hinge = new THREE.Vector3(center.x, box.max.y, box.min.z);
-      bonnetPivot.current = createPivot(bonnet, hinge);
-    }
-
-    if (boot) {
-      const box = new THREE.Box3().setFromObject(boot);
-      const center = box.getCenter(new THREE.Vector3());
-      const hinge = new THREE.Vector3(center.x, box.max.y, box.max.z);
-      bootPivot.current = createPivot(boot, hinge);
-    }
-
-    const wheelNames = ["WHEEL_LF", "WHEEL_RF", "WHEEL_LR", "WHEEL_RR"];
-    wheelPivots.current = wheelNames
-      .map((name) => {
-        const wheel = carScene.getObjectByName(name);
-        if (!wheel) return null;
-        const box = new THREE.Box3().setFromObject(wheel);
-        const center = box.getCenter(new THREE.Vector3());
-        const pivot = createPivot(wheel, center);
-        if (pivot) pivot.userData.webPart = "wheel";
-        return pivot;
-      })
-      .filter(Boolean);
-
-    lightMaterials.current = [];
-    paintMaterials.current = [];
-
-    carScene.traverse((object) => {
-      if (!object.isMesh) return;
-
-      const objectName = (object.name || "").toLowerCase();
-
-      // Hide a logo/badge only when the GLB exposes it as its own object.
-      // Do NOT hide every object containing the source-car name because many real lights/body parts use it internally.
-      const isStandaloneBrandMark = ["logo", "badge", "emblem", "wordmark", "porsche_logo", "porsche_badge"]
-        .some((keyword) => objectName.includes(keyword));
-      if (isStandaloneBrandMark) {
-        object.visible = false;
-        return;
-      }
-
-      const originalMaterials = Array.isArray(object.material)
-        ? object.material
-        : [object.material];
-
-      const clonedMaterials = originalMaterials.map((material) => {
-        if (!material) return material;
-
-        const cloned = material.clone();
-        const materialName = (cloned.name || "").toLowerCase();
-
-        // Keep decals/stickers untouched and only recolour the actual exterior paint.
-        if (materialName.includes("ext_carpaint_inst")) {
-          paintMaterials.current.push(cloned);
-          cloned.metalness = Math.max(cloned.metalness ?? 0, 0.62);
-          cloned.roughness = Math.min(cloned.roughness ?? 0.4, 0.24);
+        if (mn.includes("carpaint") && !name.includes("wheel")) {
+          // The Porsche GLB car-paint texture contains baked colour information.
+          // Remove only the colour/emissive maps so selected swatches become the
+          // actual body colour. Keep normal/roughness detail for realism.
+          m.map = null;
+          m.emissiveMap = null;
+          if (m.emissive) m.emissive.set("#000000");
+          m.emissiveIntensity = 0;
+          m.vertexColors = false;
+          paints.current.push(m);
         }
 
-        const isFrontLight =
-          objectName.includes("emissive_light_front") ||
-          objectName.includes("aux_light") ||
-          objectName.includes("headlight") ||
-          objectName === "l0" ||
-          objectName === "l1" ||
-          materialName.includes("emissive_light_front") ||
-          materialName.includes("aux_light") ||
-          materialName.includes("headlight");
+        // IMPORTANT: wheel meshes get their own clean PBR material response.
+        // We intentionally remove the GLB detail texture from rims because that
+        // texture is what was washing the wheels almost pure white in bright HDR.
+        const isRimMesh = name.includes("rims#") || name.startsWith("rims");
 
-        if (isFrontLight && cloned.emissive) {
-          cloned.userData.baseEmissive = cloned.emissive.clone();
-          cloned.userData.baseEmissiveIntensity = cloned.emissiveIntensity ?? 1;
-          lightMaterials.current.push(cloned);
+        if (isRimMesh) {
+          m.map = null;
+          m.normalMap = null;
+          m.aoMap = null;
+          m.emissiveMap = null;
+          if (m.emissive) m.emissive.set("#000000");
+          m.emissiveIntensity = 0;
+          rims.current.push(m);
         }
 
-        return cloned;
+        // Keep the actual rim/spokes independently colourable, but darken any
+        // separate bright inner-wheel / brake-disc material that sits behind them.
+        // This intentionally excludes the rim and caliper materials.
+        const wheelContext = /wheel|rim|brake|disc|rotor|hub/.test(`${name} ${mn}`);
+        const innerPart = /disc|rotor|hub|inner|backplate|brake/.test(`${name} ${mn}`);
+        if (wheelContext && innerPart && !isRimMesh && !name.includes("caliper") && !mn.includes("caliper")) {
+          wheelInners.current.push(m);
+        }
+
+        if (name.includes("caliper") || mn.includes("calipers")) calipers.current.push(m);
+        if (mn.includes("glass") || name.startsWith("glass#")) glasses.current.push(m);
+        if (mn.includes("carbon") || name.includes("tiled_carbon")) carbons.current.push(m);
+        if (mn.includes("emissive") || name.includes("emissive")) emissives.current.push(m);
+        return m;
       });
-
-      object.material = Array.isArray(object.material)
-        ? clonedMaterials
-        : clonedMaterials[0];
+      obj.material = Array.isArray(obj.material) ? cloned : cloned[0];
     });
-
-    onCapabilities?.({
-      doors: Boolean(leftDoor || rightDoor),
-      wheels: wheelPivots.current.length > 0,
-      bonnet: Boolean(bonnetPivot.current),
-      boot: Boolean(bootPivot.current),
-    });
-
-    return () => {
-      leftDoorPivot.current = null;
-      rightDoorPivot.current = null;
-      bonnetPivot.current = null;
-      bootPivot.current = null;
-      wheelPivots.current = [];
-      lightMaterials.current = [];
-      paintMaterials.current = [];
-    };
-  }, [carScene, onCapabilities]);
+  }, [car]);
 
   useEffect(() => {
-    const bodyColor =
-      paintTone === "custom"
+    const color = before
+      ? "#6f7478"
+      : paintTone === "custom"
         ? customPaint
-        : PAINTS.find((paint) => paint.id === paintTone)?.hex ?? "#17263D";
+        : PAINTS.find(x => x.id === paintTone)?.hex || "#0f2fa8";
+    const f = before ? FINISHES[0] : FINISHES.find(x => x.id === finish) || FINISHES[1];
 
-    paintMaterials.current.forEach((material) => {
-      material.color.set(bodyColor);
-
-      // Give every preset and custom colour a stronger metallic-car-paint look.
-      if ("metalness" in material) material.metalness = Math.max(material.metalness ?? 0, 0.72);
-      if ("roughness" in material) material.roughness = Math.min(material.roughness ?? 0.3, 0.24);
-      if ("clearcoat" in material) material.clearcoat = 0.92;
-      if ("clearcoatRoughness" in material) material.clearcoatRoughness = 0.12;
-
-      material.needsUpdate = true;
+    paints.current.forEach(m => {
+      m.color?.set(color);
+      m.metalness = beforeMode ? .58 : THREE.MathUtils.clamp(f.metalness * (.55 + metallicBoost), 0, 1);
+      m.roughness = f.roughness;
+      if ("clearcoat" in m) m.clearcoat = beforeMode ? .82 : THREE.MathUtils.clamp(f.clearcoat * (.35 + paintGloss), 0, 1);
+      if ("clearcoatRoughness" in m) m.clearcoatRoughness = f.id === "matte" ? .58 : .045;
+      if ("envMapIntensity" in m) m.envMapIntensity = lightsOn ? 1.35 : .62;
+      if ("sheen" in m) m.sheen = 0;
+      m.needsUpdate = true;
     });
-  }, [paintTone, customPaint]);
+  }, [paintTone, customPaint, finish, before, lightsOn]);
 
   useEffect(() => {
-    lightMaterials.current.forEach((material) => {
-      if (!material.emissive) return;
-
-      if (headlights) {
-        material.emissive.set("#fff3c4");
-        material.emissiveIntensity = 10;
-      } else {
-        const base = material.userData.baseEmissive;
-        if (base) material.emissive.copy(base);
-        material.emissiveIntensity =
-          material.userData.baseEmissiveIntensity ?? 1;
-      }
-      material.needsUpdate = true;
+    const r = before
+      ? RIMS[0]
+      : rim === "custom"
+        ? { id: "custom", name: "CUSTOM", hex: customRimColor, metalness: .58, roughness: .40, env: .22 }
+        : (RIMS.find(x => x.id === rim) || RIMS[0]);
+    rims.current.forEach(m => {
+      m.color?.set(r.hex);
+      m.metalness = r.metalness;
+      m.roughness = r.roughness;
+      if ("envMapIntensity" in m) m.envMapIntensity = r.env;
+      if ("clearcoat" in m) m.clearcoat = .05;
+      if ("clearcoatRoughness" in m) m.clearcoatRoughness = .65;
+      m.needsUpdate = true;
     });
-  }, [headlights]);
+
+    // Dark inner wheel hardware: removes the distracting white area while
+    // leaving rims.current untouched, so all rim presets + custom colour work.
+    wheelInners.current.forEach(m => {
+      m.map = null;
+      m.emissiveMap = null;
+      if (m.emissive) m.emissive.set("#000000");
+      m.emissiveIntensity = 0;
+      m.color?.set("#16191d");
+      m.metalness = .72;
+      m.roughness = .42;
+      if ("envMapIntensity" in m) m.envMapIntensity = .22;
+      if ("clearcoat" in m) m.clearcoat = .04;
+      m.needsUpdate = true;
+    });
+
+    const c = before
+      ? "#343638"
+      : caliper === "custom"
+        ? customCaliperColor
+        : (CALIPERS.find(x => x.id === caliper)?.hex || "#d4141d");
+    calipers.current.forEach(m => {
+      m.color?.set(c);
+      m.metalness = .38;
+      m.roughness = .36;
+      if ("envMapIntensity" in m) m.envMapIntensity = .35;
+      m.needsUpdate = true;
+    });
+  }, [rim, caliper, customRimColor, customCaliperColor, before]);
+
+  useEffect(() => {
+    const t = before ? TINTS[0] : TINTS.find(x => x.id === tint) || TINTS[1];
+    glasses.current.forEach(m => {
+      m.transparent = true;
+      m.opacity = t.opacity;
+      m.color?.set(before ? "#a8b2b7" : "#152027");
+      m.roughness = .08;
+      m.metalness = .02;
+      m.needsUpdate = true;
+    });
+  }, [tint, before]);
+
+  useEffect(() => {
+    carbons.current.forEach(m => {
+      m.color?.set(before || !carbon ? "#55595d" : "#111315");
+      m.metalness = before || !carbon ? .32 : .68;
+      m.roughness = before || !carbon ? .45 : .24;
+      if ("envMapIntensity" in m) m.envMapIntensity = lightsOn ? .55 : .3;
+      m.needsUpdate = true;
+    });
+  }, [carbon, before, lightsOn]);
+
+  useEffect(() => {
+    Object.entries(aeroObjects.current).forEach(([key, obj]) => {
+      if (!obj) return;
+      if (before) obj.visible = false;
+      else if (key === "skirtL" || key === "skirtR") obj.visible = aero.skirts;
+      else obj.visible = !!aero[key];
+    });
+  }, [aero, before]);
+
+  useEffect(() => {
+    emissives.current.forEach(m => {
+      if (!m.emissive) return;
+      m.emissive.set(lightsOn ? "#fff0b8" : "#1c1b18");
+      m.emissiveIntensity = lightsOn ? 3.6 : .08;
+      m.needsUpdate = true;
+    });
+  }, [lightsOn]);
+
+  useEffect(() => {
+    car.traverse((obj) => {
+      if (!obj.isMesh || !obj.material) return;
+      const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+      materials.forEach((mat) => {
+        const n = `${obj.name} ${mat.name || ""}`.toLowerCase();
+
+        if (n.includes("caliper") || n.includes("brake")) {
+          mat.roughness = beforeMode ? .34 : THREE.MathUtils.lerp(.62, .12, caliperGloss);
+          if ("clearcoat" in mat) mat.clearcoat = beforeMode ? .45 : caliperGloss;
+          mat.needsUpdate = true;
+        }
+
+        if (carbon && (n.includes("carbon") || n.includes("cf_"))) {
+          if (carbonFinish === "gloss") {
+            mat.roughness = .16;
+            if ("clearcoat" in mat) mat.clearcoat = 1;
+          } else if (carbonFinish === "satin") {
+            mat.roughness = .42;
+            if ("clearcoat" in mat) mat.clearcoat = .28;
+          } else {
+            mat.roughness = .31;
+            if ("clearcoat" in mat) mat.clearcoat = .52;
+          }
+          mat.needsUpdate = true;
+        }
+      });
+    });
+  }, [car, caliperGloss, carbon, carbonFinish, beforeMode]);
 
   useFrame((state, delta) => {
-    if (group.current) {
-      const targetRotation = driveMode ? Math.PI / 2 : rotation;
-      group.current.rotation.y = THREE.MathUtils.lerp(
-        group.current.rotation.y,
-        targetRotation,
-        0.1
-      );
+    if (!group.current) return;
+    group.current.rotation.y = THREE.MathUtils.lerp(
+      group.current.rotation.y,
+      rotation + (autoRotate ? state.clock.elapsedTime * .035 : 0),
+      .08
+    );
+    const drop = before ? 0 : stance * .16;
+    group.current.position.y = THREE.MathUtils.lerp(group.current.position.y, -1.08 - drop, .1);
 
-      const idle = engineOn
-        ? Math.sin(state.clock.elapsedTime * 24) * 0.008
-        : 0;
-
-      // Keep the hero car at its original height, but lower the entire
-      // car slightly in DRIVE mode so the road/car sit lower in the hero.
-      const targetY = driveMode ? -1.85 : -0.95;
-
-      group.current.position.y = THREE.MathUtils.lerp(
-        group.current.position.y,
-        targetY + idle,
-        0.1
-      );
-
-      if (driveMode) {
-        driveProgress.current = (driveProgress.current + delta * 3.05) % 18;
-        const roadX = -9 + driveProgress.current;
-        group.current.position.x = roadX;
-        group.current.position.z = THREE.MathUtils.lerp(group.current.position.z, 0.4, 0.08);
-        const driveScale = 0.64;
-        group.current.scale.lerp(new THREE.Vector3(driveScale, driveScale, driveScale), 0.07);
-      } else {
-        driveProgress.current = 0;
-        group.current.position.x = THREE.MathUtils.lerp(group.current.position.x, 0, 0.085);
-        group.current.position.z = THREE.MathUtils.lerp(group.current.position.z, 0, 0.085);
-        const heroScale = 1.18;
-        group.current.scale.lerp(new THREE.Vector3(heroScale, heroScale, heroScale), 0.07);
-      }
-    }
-
-    const doorAngle = THREE.MathUtils.degToRad(56);
-
-    if (leftDoorPivot.current) {
-      leftDoorPivot.current.rotation.y = THREE.MathUtils.lerp(
-        leftDoorPivot.current.rotation.y,
-        leftDoorOpen ? -doorAngle : 0,
-        0.12
-      );
-    }
-
-    if (rightDoorPivot.current) {
-      rightDoorPivot.current.rotation.y = THREE.MathUtils.lerp(
-        rightDoorPivot.current.rotation.y,
-        rightDoorOpen ? doorAngle : 0,
-        0.12
-      );
-    }
-
-    if (bonnetPivot.current) {
-      bonnetPivot.current.rotation.x = THREE.MathUtils.lerp(
-        bonnetPivot.current.rotation.x,
-        bonnetOpen ? THREE.MathUtils.degToRad(-54) : 0,
-        0.1
-      );
-    }
-
-    if (bootPivot.current) {
-      bootPivot.current.rotation.x = THREE.MathUtils.lerp(
-        bootPivot.current.rotation.x,
-        bootOpen ? THREE.MathUtils.degToRad(52) : 0,
-        0.1
-      );
-    }
-
-    if (wheelsMoving || driveMode) {
-      wheelPivots.current.forEach((pivot) => {
-        pivot.rotation.x -= delta * 8;
-      });
-    }
+    const steer = THREE.MathUtils.degToRad((before ? 0 : steering) * 24);
+    frontSteer.current.forEach(b => b.rotation.y = THREE.MathUtils.lerp(b.rotation.y, steer, .12));
+    if (wheelSpin) wheelRotators.current.forEach(w => w.rotation.x -= delta * 6.5);
   });
 
-  const handleModelClick = (event) => {
-    if (event.delta > 6) return;
-
-    let object = event.object;
-    let detected = (object?.name || "").toLowerCase();
-
-    while (object && object !== carScene) {
-      const name = (object.name || "").toLowerCase();
-
-      if (name.includes("wheel")) {
-        detected = "wheel";
-        break;
-      }
-      if (name.includes("door_l")) {
-        detected = "door_l";
-        break;
-      }
-      if (name.includes("door_r")) {
-        detected = "door_r";
-        break;
-      }
-      if (name.includes("bonnet") || name.includes("hood")) {
-        detected = "bonnet";
-        break;
-      }
-      if (
-        name.includes("boot") ||
-        name.includes("trunk") ||
-        name.includes("decklid")
-      ) {
-        detected = "boot";
-        break;
-      }
-      if (
-        name.includes("engine") ||
-        name.includes("motor") ||
-        name.includes("intake")
-      ) {
-        detected = "engine";
-        break;
-      }
-      if (
-        name.includes("light_front") ||
-        name.includes("aux_light") ||
-        name.includes("headlight") ||
-        name === "l0" ||
-        name === "l1"
-      ) {
-        detected = "headlight";
-        break;
-      }
-
-      object = object.parent;
-    }
-
-    onPartClick(detected);
-  };
-
   return (
-    <group
-      ref={group}
-      position={[0, -0.95, 0]}
-      onClick={handleModelClick}
-    >
-      <group scale={isMobile ? [104, 104, 104] : [125, 125, 125]}>
-        <primitive object={carScene} />
-      </group>
-
-      {headlights && (
+    <group ref={group} position={[0, -0.48, 0]} scale={1.38}>
+      <primitive object={car} />
+      {lightsOn && (
         <>
-          <pointLight
-            position={[0.78, 0.55, 2.55]}
-            intensity={driveMode ? 18 : 13}
-            distance={driveMode ? 10 : 7}
-            decay={2}
-            color="#fff2bd"
-          />
-          <pointLight
-            position={[-0.78, 0.55, 2.55]}
-            intensity={driveMode ? 18 : 13}
-            distance={driveMode ? 10 : 7}
-            decay={2}
-            color="#fff2bd"
-          />
-          {driveMode && (
-            <>
-              <mesh position={[0.62, -0.58, 4.55]} rotation-x={Math.PI / 2}>
-                <coneGeometry args={[1.15, 4.8, 32, 1, true]} />
-                <meshBasicMaterial
-                  color="#ffe8a3"
-                  transparent
-                  opacity={0.10}
-                  side={THREE.DoubleSide}
-                  depthWrite={false}
-                  blending={THREE.AdditiveBlending}
-                />
-              </mesh>
-              <mesh position={[-0.62, -0.58, 4.55]} rotation-x={Math.PI / 2}>
-                <coneGeometry args={[1.15, 4.8, 32, 1, true]} />
-                <meshBasicMaterial
-                  color="#ffe8a3"
-                  transparent
-                  opacity={0.10}
-                  side={THREE.DoubleSide}
-                  depthWrite={false}
-                  blending={THREE.AdditiveBlending}
-                />
-              </mesh>
-            </>
-          )}
+          <pointLight position={[.8, .65, 2.7]} intensity={7 * lightIntensity} distance={7} color={lightColor} />
+          <pointLight position={[-.8, .65, 2.7]} intensity={7 * lightIntensity} distance={7} color={lightColor} />
         </>
       )}
-
-      {/* Invisible tap zones sit directly over the physical car areas. */}
-      <mesh
-        position={[0, 0.18, 1.45]}
-        onClick={(event) => { event.stopPropagation(); onPartClick("engine"); }}
-      >
-        <boxGeometry args={[1.1, 0.34, 0.7]} />
-        <meshBasicMaterial transparent opacity={0.001} depthWrite={false} />
-      </mesh>
-      <mesh
-        position={[0, 0.42, 2.15]}
-        onClick={(event) => { event.stopPropagation(); onPartClick("bonnet"); }}
-      >
-        <boxGeometry args={[1.7, 0.28, 0.72]} />
-        <meshBasicMaterial transparent opacity={0.001} depthWrite={false} />
-      </mesh>
-      <mesh
-        position={[0, 0.42, -2.05]}
-        onClick={(event) => { event.stopPropagation(); onPartClick("boot"); }}
-      >
-        <boxGeometry args={[1.65, 0.3, 0.72]} />
-        <meshBasicMaterial transparent opacity={0.001} depthWrite={false} />
-      </mesh>
     </group>
   );
 }
 
 useGLTF.preload(CAR_MODEL_URL);
 
-function DriveRoad({ active }) {
-  if (!active) return null;
+function GarageEnvironment({ lightsOn }) {
+  const led = lightsOn ? "#fff4d8" : "#242424";
+  const gold = lightsOn ? "#d7aa49" : "#4b3a1d";
 
-  const dashes = Array.from({ length: 15 }, (_, index) => -10.5 + index * 1.5);
-
-  return (
-    <group>
-      {/* Real 3D road aligned to the exact X axis used by the moving car. */}
-      <mesh position={[0, -1.955, 0]}>
-        <boxGeometry args={[22, 0.08, 4.1]} />
-        <meshStandardMaterial color="#111519" roughness={0.94} metalness={0.02} />
-      </mesh>
-
-      <mesh position={[0, -1.904, 1.72]}>
-        <boxGeometry args={[22, 0.012, 0.055]} />
-        <meshBasicMaterial color="#f2c44b" />
-      </mesh>
-      <mesh position={[0, -1.904, -1.72]}>
-        <boxGeometry args={[22, 0.012, 0.055]} />
-        <meshBasicMaterial color="#f2c44b" />
-      </mesh>
-
-      {dashes.map((x) => (
-        <mesh key={x} position={[x, -1.903, 0]}>
-          <boxGeometry args={[0.74, 0.014, 0.07]} />
-          <meshBasicMaterial color="#eef2ee" />
+  const Cabinet = ({ position, width = 2.8 }) => (
+    <group position={position}>
+      <RoundedBox args={[width, 1.75, .72]} radius={.05} smoothness={3} castShadow receiveShadow>
+        <meshStandardMaterial color="#151719" roughness={.38} metalness={.55} />
+      </RoundedBox>
+      {[.48, .12, -.24, -.60].map((y) => (
+        <mesh key={y} position={[0, y, .37]} castShadow>
+          <boxGeometry args={[width - .25, .025, .025]} />
+          <meshStandardMaterial color="#4b4e50" metalness={.8} roughness={.28} />
+        </mesh>
+      ))}
+      {[-.8, 0, .8].map((x) => (
+        <mesh key={x} position={[x, .67, .39]}>
+          <boxGeometry args={[.42, .045, .025]} />
+          <meshStandardMaterial color="#b88a38" metalness={.72} roughness={.28} />
         </mesh>
       ))}
     </group>
   );
+
+  const Tyre = ({ y, x = 0 }) => (
+    <mesh position={[x, y, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+      <torusGeometry args={[.54, .19, 18, 42]} />
+      <meshStandardMaterial color="#08090a" roughness={.86} metalness={.02} />
+    </mesh>
+  );
+
+  return (
+    <group>
+      {/* epoxy workshop floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.105, 0]} receiveShadow>
+        <planeGeometry args={[34, 30]} />
+        <meshStandardMaterial color="#17191b" roughness={.56} metalness={.18} envMapIntensity={.62} />
+      </mesh>
+
+      {/* slightly polished service bay under the car */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.095, -.15]} receiveShadow>
+        <planeGeometry args={[11.5, 7.4]} />
+        <meshPhysicalMaterial
+          color="#232527"
+          roughness={.34}
+          metalness={.32}
+          clearcoat={.25}
+          clearcoatRoughness={.38}
+          envMapIntensity={.9}
+        />
+      </mesh>
+
+      {/* rear concrete wall */}
+      <mesh position={[0, 3.4, -7.4]} receiveShadow>
+        <boxGeometry args={[22, 9, .35]} />
+        <meshStandardMaterial color="#17191b" roughness={.9} metalness={.04} />
+      </mesh>
+
+      {/* side walls */}
+      <mesh position={[-10.7, 3.4, -.4]} receiveShadow>
+        <boxGeometry args={[.35, 9, 14]} />
+        <meshStandardMaterial color="#111315" roughness={.92} />
+      </mesh>
+      <mesh position={[10.7, 3.4, -.4]} receiveShadow>
+        <boxGeometry args={[.35, 9, 14]} />
+        <meshStandardMaterial color="#111315" roughness={.92} />
+      </mesh>
+
+      {/* ceiling */}
+      <mesh position={[0, 7.85, -.2]} receiveShadow>
+        <boxGeometry args={[22, .28, 15]} />
+        <meshStandardMaterial color="#090a0b" roughness={.92} />
+      </mesh>
+
+      {/* ceiling beams */}
+      {[-6.8, -3.4, 0, 3.4, 6.8].map((x) => (
+        <mesh key={`beam-${x}`} position={[x, 7.55, -.3]} castShadow>
+          <boxGeometry args={[.22, .32, 14]} />
+          <meshStandardMaterial color="#202326" metalness={.38} roughness={.55} />
+        </mesh>
+      ))}
+
+      {/* long LED workshop fixtures */}
+      {[-5.4, -1.8, 1.8, 5.4].map((x) => (
+        <group key={`led-${x}`}>
+          <mesh position={[x, 7.34, -.2]}>
+            <boxGeometry args={[.15, .06, 10.8]} />
+            <meshBasicMaterial color={led} toneMapped={false} />
+          </mesh>
+          {lightsOn && (
+            <pointLight
+              position={[x, 5.7, -.1]}
+              intensity={11}
+              distance={8.5}
+              decay={2}
+              color="#fff2d3"
+            />
+          )}
+        </group>
+      ))}
+
+      {/* rear wall architectural light bars */}
+      {[-5.9, -3.0, 3.0, 5.9].map((x) => (
+        <group key={`wall-light-${x}`}>
+          <mesh position={[x, 3.55, -7.19]}>
+            <boxGeometry args={[.055, 4.4, .05]} />
+            <meshBasicMaterial color={gold} toneMapped={false} />
+          </mesh>
+          {lightsOn && (
+            <pointLight position={[x, 3.3, -6.5]} intensity={4.2} distance={4.2} color="#d7aa49" />
+          )}
+        </group>
+      ))}
+
+      {/* illuminated centre workshop sign */}
+      <RoundedBox
+        args={[5.3, 1.28, .16]}
+        radius={.08}
+        smoothness={4}
+        position={[0, 4.75, -7.08]}
+        castShadow
+      >
+        <meshPhysicalMaterial color="#070809" metalness={.62} roughness={.28} clearcoat={.5} />
+      </RoundedBox>
+      <mesh position={[0, 4.75, -6.985]}>
+        <boxGeometry args={[4.72, .07, .03]} />
+        <meshBasicMaterial color={gold} toneMapped={false} />
+      </mesh>
+      {lightsOn && (
+        <pointLight position={[0, 4.65, -5.9]} intensity={10} distance={5.5} color="#d7aa49" />
+      )}
+
+      {/* concrete pillars */}
+      {[-8.1, 8.1].map((x) => (
+        <group key={`pillar-${x}`}>
+          <mesh position={[x, 2.9, -6.7]} castShadow receiveShadow>
+            <boxGeometry args={[.82, 8, .82]} />
+            <meshStandardMaterial color="#25282a" roughness={.78} metalness={.08} />
+          </mesh>
+          <mesh position={[x, .15, -6.25]}>
+            <boxGeometry args={[.84, .14, .035]} />
+            <meshBasicMaterial color="#d0a13f" />
+          </mesh>
+        </group>
+      ))}
+
+      {/* tool cabinets */}
+      <Cabinet position={[-6.15, -.20, -6.72]} width={3.25} />
+      <Cabinet position={[5.1, -.20, -6.72]} width={2.5} />
+
+      {/* work bench */}
+      <group position={[-3.8, .08, -6.45]}>
+        <mesh castShadow>
+          <boxGeometry args={[2.7, .18, .95]} />
+          <meshStandardMaterial color="#303336" metalness={.58} roughness={.38} />
+        </mesh>
+        {[-1.05, 1.05].map((x) => (
+          <mesh key={x} position={[x, -.75, 0]} castShadow>
+            <boxGeometry args={[.13, 1.55, .13]} />
+            <meshStandardMaterial color="#151719" metalness={.55} roughness={.45} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* wheel / tyre rack */}
+      <group position={[7.15, -.15, -6.15]}>
+        <mesh position={[0, 1.55, -.22]} castShadow>
+          <boxGeometry args={[2.5, 3.7, .14]} />
+          <meshStandardMaterial color="#1e2123" metalness={.58} roughness={.48} />
+        </mesh>
+        <Tyre y={.1} x={-.62} />
+        <Tyre y={.1} x={.62} />
+        <Tyre y={1.35} x={-.62} />
+        <Tyre y={1.35} x={.62} />
+        <Tyre y={2.6} x={-.62} />
+        <Tyre y={2.6} x={.62} />
+      </group>
+
+      {/* hydraulic lift posts */}
+      {[-4.8, 4.8].map((x) => (
+        <group key={`lift-${x}`} position={[x, 0, .35]}>
+          <mesh position={[0, .65, 0]} castShadow>
+            <boxGeometry args={[.32, 3.5, .46]} />
+            <meshStandardMaterial color="#202326" metalness={.68} roughness={.38} />
+          </mesh>
+          <mesh position={[0, -1.01, 0]} castShadow>
+            <boxGeometry args={[1.15, .16, .9]} />
+            <meshStandardMaterial color="#bd913b" metalness={.5} roughness={.38} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* floor lift rails */}
+      {[-2.45, 2.45].map((x) => (
+        <mesh key={`rail-${x}`} position={[x, -1.065, .05]} receiveShadow>
+          <boxGeometry args={[.13, .045, 7.4]} />
+          <meshStandardMaterial color="#777a7c" metalness={.86} roughness={.28} />
+        </mesh>
+      ))}
+
+      {/* floor bay markings */}
+      {[-5.5, 5.5].map((x) => (
+        <mesh key={`line-${x}`} rotation={[-Math.PI / 2, 0, 0]} position={[x, -1.075, -.1]}>
+          <planeGeometry args={[.055, 10.5]} />
+          <meshBasicMaterial color="#b58b3b" transparent opacity={.55} />
+        </mesh>
+      ))}
+
+      {/* garage door panels in rear */}
+      <group position={[0, 2.45, -7.18]}>
+        {[-2.0, -1.3, -.6, .1, .8].map((y) => (
+          <mesh key={y} position={[0, y, 0]}>
+            <boxGeometry args={[5.7, .045, .035]} />
+            <meshStandardMaterial color="#35383a" metalness={.42} roughness={.52} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* premium architectural wall layered over the workshop shell */}
+      <mesh position={[0, 3.45, -7.16]} receiveShadow>
+        <boxGeometry args={[7.7, 6.8, .12]} />
+        <meshStandardMaterial color="#b8b1a6" roughness={.76} metalness={.01} />
+      </mesh>
+
+      {/* stone panel joints */}
+      {[-2.9, -1.45, 0, 1.45, 2.9].map((x) => (
+        <mesh key={`stone-joint-${x}`} position={[x, 3.45, -7.09]}>
+          <boxGeometry args={[.015, 6.7, .018]} />
+          <meshBasicMaterial color="#77736c" transparent opacity={.30} />
+        </mesh>
+      ))}
+
+      {/* fluted dark timber / metal side panels */}
+      {[-1, 1].map((side) => (
+        <group key={`premium-slats-${side}`}>
+          {Array.from({ length: 13 }).map((_, i) => {
+            const x = side * (4.25 + i * .23);
+            return (
+              <mesh key={i} position={[x, 3.45, -7.08]} castShadow>
+                <boxGeometry args={[.105, 6.85, .13]} />
+                <meshStandardMaterial color={i % 2 ? "#2b2722" : "#17191a"} roughness={.62} metalness={.14} />
+              </mesh>
+            );
+          })}
+        </group>
+      ))}
+
+      {/* warm premium wall wash */}
+      {lightsOn && (
+        <>
+          <pointLight position={[-3.2, 3.8, -5.9]} intensity={3.6} distance={4.5} color="#f1d7a9" />
+          <pointLight position={[3.2, 3.8, -5.9]} intensity={3.6} distance={4.5} color="#f1d7a9" />
+        </>
+      )}
+
+      {/* realistic car grounding */}
+      <ContactShadows
+        position={[0, -1.075, 0]}
+        opacity={lightsOn ? .58 : .72}
+        scale={10}
+        blur={2.2}
+        far={4}
+        resolution={512}
+        color="#000000"
+      />
+    </group>
+  );
 }
 
-function CarScene(props) {
+function StudioScene(props) {
   return (
     <>
-      <CameraRig driveMode={props.driveMode} />
-      <ambientLight intensity={props.headlights ? 2.5 : 1.25} />
-      <hemisphereLight
-        intensity={props.headlights ? 3.0 : 1.65}
-        color="#e9ffff"
-        groundColor="#071316"
-      />
-      <directionalLight position={[7, 7, 6]} intensity={props.headlights ? 7.2 : 4.2} color="#ffffff" />
-      <directionalLight position={[-6, 4, -4]} intensity={props.headlights ? 4.2 : 2.4} color="#39f4d4" />
-      <pointLight position={[0, 4, -4]} intensity={props.headlights ? 19 : 10} distance={12} color="#795cff" />
+      <CameraRig view={props.view} zoom={props.zoom} />
 
-      <DriveRoad active={props.driveMode} />
+      <ambientLight intensity={props.lightsOn ? .42 : .12} />
+      <hemisphereLight
+        intensity={props.lightsOn ? .78 : .18}
+        color="#f6ead1"
+        groundColor="#07090b"
+      />
+
+      <directionalLight
+        castShadow
+        position={[5.8, 8.5, 6.5]}
+        intensity={props.lightsOn ? 3.4 : .65}
+        color="#fff3d8"
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-bias={-.00015}
+      />
+
+      <directionalLight
+        position={[-6, 4.2, 1]}
+        intensity={props.lightsOn ? 1.45 : .28}
+        color="#b8d4e8"
+      />
+
+      <spotLight
+        castShadow
+        position={[0, 7, 3.5]}
+        angle={.62}
+        penumbra={.72}
+        intensity={props.lightsOn ? 13 : 1.8}
+        distance={15}
+        decay={2}
+        color="#fff0cf"
+      />
+
+      <spotLight
+        position={[-5.5, 4.2, -1.5]}
+        angle={.55}
+        penumbra={.8}
+        intensity={props.lightsOn ? 5 : .7}
+        distance={11}
+        color="#d7aa49"
+      />
+
+      <GarageEnvironment lightsOn={props.lightsOn} />
 
       <Suspense fallback={<Loader />}>
         <CarModel {...props} />
-        <Environment preset="city" />
+        <Environment
+          preset="apartment"
+          environmentIntensity={props.lightsOn ? 1.12 : .40}
+        />
       </Suspense>
-
-      {!props.driveMode && (
-        <>
-          <mesh rotation-x={-Math.PI / 2} position={[0, -1.04, 0]}>
-            <circleGeometry args={[4.8, 96]} />
-            <meshBasicMaterial
-              color="#0b1f21"
-              transparent
-              opacity={0.74}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-
-          <mesh rotation-x={-Math.PI / 2} position={[0, -1.03, 0]}>
-            <ringGeometry args={[3.35, 3.42, 96]} />
-            <meshBasicMaterial color="#5fffe0" transparent opacity={0.7} />
-          </mesh>
-        </>
-      )}
     </>
   );
 }
 
-export default function App() {
-  const [rotation, setRotation] = useState(-0.36);
-  const [autoRotate, setAutoRotate] = useState(true);
-  const [dragging, setDragging] = useState(false);
-  const [pointerStart, setPointerStart] = useState(null);
-  const [rotationStart, setRotationStart] = useState(0);
+function ModPanel({
+  active, paintTone, setPaintTone, customPaint, setCustomPaint, finish, setFinish,
+  rim, setRim, customRimColor, setCustomRimColor, caliper, setCaliper,
+  customCaliperColor, setCustomCaliperColor, tint, setTint, carbon, setCarbon,
+  aero, setAero, stance, setStance, steering, setSteering, lightsOn, setLightsOn,
+  wheelSpin, setWheelSpin, activate,
+  lightColor, setLightColor, lightIntensity, setLightIntensity,
+  paintGloss, setPaintGloss, metallicBoost, setMetallicBoost,
+  rimScale, setRimScale, caliperGloss, setCaliperGloss,
+  carbonFinish, setCarbonFinish, demoMode, setDemoMode,
+  beforeMode, setBeforeMode, activePreset, applyBuildPreset, applyAeroPreset,
+}) {
+  const info = CATEGORY_INFO[active];
 
-  const [leftDoorOpen, setLeftDoorOpen] = useState(false);
-  const [rightDoorOpen, setRightDoorOpen] = useState(false);
-  const [wheelsMoving, setWheelsMoving] = useState(false);
-  const [headlights, setHeadlights] = useState(true);
-  const [bonnetOpen, setBonnetOpen] = useState(false);
-  const [bootOpen, setBootOpen] = useState(false);
-  const [engineOn, setEngineOn] = useState(false);
-  const [driveMode, setDriveMode] = useState(false);
-  const [paintTone, setPaintTone] = useState("midnight");
-  const [customPaint, setCustomPaint] = useState("#FF5A1F");
-  const [selectedMod, setSelectedMod] = useState("wheels");
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const [toast, setToast] = useState("");
-  const [faqOpen, setFaqOpen] = useState(0);
-  const [faqExpanded, setFaqExpanded] = useState(false);
-  const [detailModal, setDetailModal] = useState(null);
-  const heroControlRef = useRef(null);
-  const paintRef = useRef(null);
-  const partsRef = useRef(null);
-  const systemsRef = useRef(null);
-  const servicesRef = useRef(null);
-  const packagesRef = useRef(null);
-  const processRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [capabilities, setCapabilities] = useState({
-    doors: true,
-    wheels: true,
-    bonnet: false,
-    boot: false,
-  });
+  const ChoiceHeader = ({ title, text }) => (
+    <div className="step2-section-head">
+      <strong>{title}</strong>
+      {text && <small>{text}</small>}
+    </div>
+  );
 
-  useEffect(() => {
-    const updateMobile = () => setIsMobile(window.innerWidth < 760);
-    updateMobile();
-    window.addEventListener("resize", updateMobile);
-    return () => window.removeEventListener("resize", updateMobile);
-  }, []);
+  if (active === "paint") {
+    const selectedPaint =
+      paintTone === "custom"
+        ? { name: "Custom Colour", hex: customPaint }
+        : PAINTS.find((x) => x.id === paintTone);
 
-  useEffect(() => {
-    if (!autoRotate || dragging || driveMode) return undefined;
+    return (
+      <div className="mod-panel simple-step-panel">
+        <ChoiceHeader
+          title="Choose your body colour"
+          text="Tap any colour. The car updates immediately."
+        />
 
-    let frame;
-    const animate = () => {
-      setRotation((value) => value + 0.0026);
-      frame = requestAnimationFrame(animate);
-    };
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [autoRotate, dragging, driveMode]);
+        <div className="visual-colour-grid">
+          {PAINTS.map((x) => (
+            <button
+              key={x.id}
+              className={`visual-colour-card ${paintTone === x.id ? "active" : ""}`}
+              onClick={() => {
+                setPaintTone(x.id);
+                activate();
+              }}
+            >
+              <span className="colour-disc" style={{ background: x.hex }} />
+              <span className="choice-text">
+                <strong>{x.name}</strong>
+                <small>{paintTone === x.id ? "Selected" : "Choose colour"}</small>
+              </span>
+              <b>{paintTone === x.id ? "✓" : ""}</b>
+            </button>
+          ))}
 
-  useEffect(() => {
-    if (!toast) return undefined;
-    const timer = setTimeout(() => setToast(""), 2600);
-    return () => clearTimeout(timer);
-  }, [toast]);
+          <label className={`visual-colour-card custom-colour-card ${paintTone === "custom" ? "active" : ""}`}>
+            <input
+              type="color"
+              value={customPaint}
+              onChange={(e) => {
+                setCustomPaint(e.target.value);
+                setPaintTone("custom");
+                activate();
+              }}
+            />
+            <span className="colour-disc custom-disc" style={{ background: customPaint }}>+</span>
+            <span className="choice-text">
+              <strong>Custom Colour</strong>
+              <small>{customPaint.toUpperCase()}</small>
+            </span>
+            <b>{paintTone === "custom" ? "✓" : ""}</b>
+          </label>
+        </div>
 
-  const onPointerDown = (event) => {
-    setDragging(true);
-    setAutoRotate(false);
-    setPointerStart({ x: event.clientX });
-    setRotationStart(rotation);
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  };
+        <ChoiceHeader
+          title="Choose the paint finish"
+          text="This changes how light reflects from the body."
+        />
 
-  const onPointerMove = (event) => {
-    if (!dragging || !pointerStart) return;
-    const dx = event.clientX - pointerStart.x;
-    setRotation(rotationStart + dx * 0.0085);
-  };
+        <div className="premium-choice-grid finish-choice-grid">
+          {FINISHES.map((x) => (
+            <button
+              key={x.id}
+              className={finish === x.id ? "active" : ""}
+              onClick={() => {
+                setFinish(x.id);
+                activate();
+              }}
+            >
+              <span className={`finish-sample finish-${x.id}`} />
+              <span className="choice-text">
+                <strong>{x.name}</strong>
+                <small>{finish === x.id ? "Applied to car" : "Preview finish"}</small>
+              </span>
+              <b>{finish === x.id ? "✓" : ""}</b>
+            </button>
+          ))}
+        </div>
 
-  const endDrag = (event) => {
-    if (!dragging) return;
-    setDragging(false);
-    setPointerStart(null);
-    event?.currentTarget?.releasePointerCapture?.(event.pointerId);
-    setTimeout(() => setAutoRotate(true), 900);
-  };
 
-  const handlePartClick = (part) => {
-    if (part.includes("door_l")) {
-      setLeftDoorOpen((value) => !value);
-      return;
-    }
+        <ChoiceHeader
+          title="Paint character"
+          text="Fine-tune the reflective character of the body finish."
+        />
+        <div className="clear-range-card">
+          <div className="range-card-head">
+            <span><small>CLEAR COAT</small><strong>Surface gloss</strong></span>
+            <b>{Math.round(paintGloss * 100)}%</b>
+          </div>
+          <input type="range" min=".15" max="1" step=".01" value={paintGloss}
+            onChange={(e) => { setPaintGloss(+e.target.value); activate(); }} />
+        </div>
+        <div className="clear-range-card">
+          <div className="range-card-head">
+            <span><small>METALLIC FLAKE</small><strong>Metallic intensity</strong></span>
+            <b>{Math.round(metallicBoost * 100)}%</b>
+          </div>
+          <input type="range" min="0" max="1" step=".01" value={metallicBoost}
+            onChange={(e) => { setMetallicBoost(+e.target.value); activate(); }} />
+        </div>
 
-    if (part.includes("door_r")) {
-      setRightDoorOpen((value) => !value);
-      return;
-    }
+        <div className="selected-choice-summary">
+          <span className="summary-swatch" style={{ background: selectedPaint?.hex }} />
+          <div>
+            <small>CURRENT BODY FINISH</small>
+            <strong>{selectedPaint?.name} · {FINISHES.find((x) => x.id === finish)?.name}</strong>
+          </div>
+          <b>LIVE</b>
+        </div>
+      </div>
+    );
+  }
 
-    if (part.includes("wheel")) {
-      setWheelsMoving((value) => !value);
-      return;
-    }
+  if (active === "wheels") {
+    return (
+      <div className="mod-panel simple-step-panel">
+        <ChoiceHeader
+          title="Choose your wheel finish"
+          text="Select a finish that matches the style of your build."
+        />
 
-    if (part.includes("headlight")) {
-      setHeadlights((value) => !value);
-      return;
-    }
+        <div className="premium-choice-grid">
+          {RIMS.map((x) => (
+            <button
+              key={x.id}
+              className={rim === x.id ? "active" : ""}
+              onClick={() => {
+                setRim(x.id);
+                activate();
+              }}
+            >
+              <span className="wheel-sample">
+                <i style={{ background: x.hex }} />
+              </span>
+              <span className="choice-text">
+                <strong>{x.name}</strong>
+                <small>{rim === x.id ? "Selected" : "Choose finish"}</small>
+              </span>
+              <b>{rim === x.id ? "✓" : ""}</b>
+            </button>
+          ))}
 
-    if (part.includes("engine")) {
-      setEngineOn((value) => !value);
-      return;
-    }
+          <label className={`premium-choice-card custom-premium-card ${rim === "custom" ? "active" : ""}`}>
+            <input
+              type="color"
+              value={customRimColor}
+              onChange={(e) => {
+                setCustomRimColor(e.target.value);
+                setRim("custom");
+                activate();
+              }}
+            />
+            <span className="wheel-sample">
+              <i style={{ background: customRimColor }} />
+            </span>
+            <span className="choice-text">
+              <strong>Custom Rim Colour</strong>
+              <small>{customRimColor.toUpperCase()}</small>
+            </span>
+            <b>{rim === "custom" ? "✓" : ""}</b>
+          </label>
+        </div>
 
-    if (part.includes("bonnet")) {
-      if (!capabilities.bonnet) {
-        setToast("BONNET IS FUSED INTO MAIN_BODY — SEPARATE IT IN BLENDER TO OPEN IT.");
-        return;
-      }
-      setBonnetOpen((value) => !value);
-      return;
-    }
 
-    if (part.includes("boot")) {
-      if (!capabilities.boot) {
-        setToast("BOOT IS FUSED INTO MAIN_BODY — SEPARATE IT IN BLENDER TO OPEN IT.");
-        return;
-      }
-      setBootOpen((value) => !value);
-    }
-  };
+        <ChoiceHeader title="Wheel setup" text="Adjust the visual wheel size and movement preview." />
+        <div className="clear-range-card">
+          <div className="range-card-head">
+            <span><small>WHEEL SIZE</small><strong>Visual wheel scale</strong></span>
+            <b>{rimScale < .98 ? "Compact" : rimScale > 1.04 ? "Large" : "OEM"}</b>
+          </div>
+          <input type="range" min=".94" max="1.08" step=".01" value={rimScale}
+            onChange={(e) => { setRimScale(+e.target.value); activate(); }} />
+        </div>
 
-  const toggleBothDoors = () => {
-    const shouldOpen = !(leftDoorOpen || rightDoorOpen);
-    setLeftDoorOpen(shouldOpen);
-    setRightDoorOpen(shouldOpen);
-  };
+        <button
+          className={`clear-action-toggle ${wheelSpin ? "active" : ""}`}
+          onClick={() => setWheelSpin((v) => !v)}
+        >
+          <span>Wheel movement preview</span>
+          <strong>{wheelSpin ? "STOP SPINNING" : "SPIN WHEELS"}</strong>
+        </button>
+      </div>
+    );
+  }
 
-  const toggleBonnet = () => {
-    if (!capabilities.bonnet) {
-      setToast("BONNET IS NOT A SEPARATE GLB OBJECT YET.");
-      return;
-    }
-    setBonnetOpen((value) => !value);
-  };
+  if (active === "brakes") {
+    return (
+      <div className="mod-panel simple-step-panel">
+        <ChoiceHeader
+          title="Choose your brake caliper colour"
+          text="Add a visible performance accent behind the wheels."
+        />
 
-  const toggleBoot = () => {
-    if (!capabilities.boot) {
-      setToast("BOOT IS NOT A SEPARATE GLB OBJECT YET.");
-      return;
-    }
-    setBootOpen((value) => !value);
-  };
+        <div className="visual-colour-grid">
+          {CALIPERS.map((x) => (
+            <button
+              key={x.id}
+              className={`visual-colour-card ${caliper === x.id ? "active" : ""}`}
+              onClick={() => {
+                setCaliper(x.id);
+                activate();
+              }}
+            >
+              <span className="colour-disc" style={{ background: x.hex }} />
+              <span className="choice-text">
+                <strong>{x.name}</strong>
+                <small>{caliper === x.id ? "Selected" : "Choose colour"}</small>
+              </span>
+              <b>{caliper === x.id ? "✓" : ""}</b>
+            </button>
+          ))}
 
-  const toggleDrive = () => {
-    setDriveMode((value) => {
-      const next = !value;
-      if (next) {
-        setAutoRotate(false);
-        setLeftDoorOpen(false);
-        setRightDoorOpen(false);
-        setBonnetOpen(false);
-        setBootOpen(false);
-        setEngineOn(true);
-      }
-      return next;
-    });
-  };
+          <label className={`visual-colour-card custom-colour-card ${caliper === "custom" ? "active" : ""}`}>
+            <input
+              type="color"
+              value={customCaliperColor}
+              onChange={(e) => {
+                setCustomCaliperColor(e.target.value);
+                setCaliper("custom");
+                activate();
+              }}
+            />
+            <span className="colour-disc custom-disc" style={{ background: customCaliperColor }}>+</span>
+            <span className="choice-text">
+              <strong>Custom Colour</strong>
+              <small>{customCaliperColor.toUpperCase()}</small>
+            </span>
+            <b>{caliper === "custom" ? "✓" : ""}</b>
+          </label>
+        </div>
+        <ChoiceHeader title="Caliper finish" text="Adjust the shine of the brake calipers." />
+        <div className="clear-range-card">
+          <div className="range-card-head">
+            <span><small>CALIPER GLOSS</small><strong>Surface finish</strong></span>
+            <b>{Math.round(caliperGloss * 100)}%</b>
+          </div>
+          <input type="range" min=".1" max="1" step=".01" value={caliperGloss}
+            onChange={(e) => { setCaliperGloss(+e.target.value); activate(); }} />
+        </div>
+      </div>
+    );
+  }
 
-  const selected = MODS.find((item) => item.id === selectedMod) ?? MODS[0];
+  if (active === "suspension") {
+    return (
+      <div className="mod-panel simple-step-panel">
+        <ChoiceHeader
+          title="Adjust the stance"
+          text="Use the sliders below. Values update on the 3D car live."
+        />
 
-  const scrollHeroControls = (direction) => {
-    heroControlRef.current?.scrollBy({
-      left: direction * Math.min(heroControlRef.current.clientWidth * 0.72, 620),
-      behavior: "smooth",
-    });
-  };
+        <div className="clear-range-card">
+          <div className="range-card-head">
+            <span>
+              <small>RIDE HEIGHT</small>
+              <strong>Lower the vehicle</strong>
+            </span>
+            <b>{Math.round(stance * 45)} mm drop</b>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step=".02"
+            value={stance}
+            onChange={(e) => {
+              setStance(+e.target.value);
+              activate();
+            }}
+          />
+          <div className="range-labels"><span>Standard</span><span>Lower</span></div>
+        </div>
 
-  const scrollRail = (ref, direction) => {
-    const rail = ref.current;
-    if (!rail) return;
-    rail.scrollBy({
-      left: direction * Math.max(220, Math.min(rail.clientWidth * 0.82, 560)),
-      behavior: "smooth",
-    });
-  };
+        <div className="clear-range-card">
+          <div className="range-card-head">
+            <span>
+              <small>FRONT WHEELS</small>
+              <strong>Steering preview</strong>
+            </span>
+            <b>{steering < -.05 ? "Left" : steering > .05 ? "Right" : "Centre"}</b>
+          </div>
+          <input
+            type="range"
+            min="-1"
+            max="1"
+            step=".02"
+            value={steering}
+            onChange={(e) => {
+              setSteering(+e.target.value);
+              activate();
+            }}
+          />
+          <div className="range-labels"><span>Left</span><span>Centre</span><span>Right</span></div>
+        </div>
+      </div>
+    );
+  }
 
-  const openDetail = (kind, item) => {
-    setDetailModal({ kind, item });
-  };
+  if (active === "aero") {
+    const aeroOptions = [
+      ["wing", "Rear Wing", "Adds a stronger rear profile"],
+      ["lip", "Front Lip", "Sharper front-end appearance"],
+      ["skirts", "Side Skirts", "Lower visual body line"],
+      ["diffuser", "Rear Diffuser", "Performance rear styling"],
+    ];
+
+    return (
+      <div className="mod-panel simple-step-panel">
+        <ChoiceHeader
+          title="Choose an aero package"
+          text="Start with a complete setup, then fine-tune individual parts."
+        />
+        <div className="preset-choice-grid">
+          {AERO_PRESETS.map(([id,name,desc,preset]) => (
+            <button key={id} onClick={() => applyAeroPreset(preset)}>
+              <strong>{name}</strong><small>{desc}</small>
+            </button>
+          ))}
+        </div>
+        <ChoiceHeader title="Fine tune aero" text="Switch individual supported GLB aero parts on or off." />
+        <div className="large-toggle-list">
+          {aeroOptions.map(([key, label, description]) => (
+            <button
+              key={key}
+              className={aero[key] ? "active" : ""}
+              onClick={() => {
+                setAero((v) => ({ ...v, [key]: !v[key] }));
+                activate();
+              }}
+            >
+              <span className="toggle-copy">
+                <strong>{label}</strong>
+                <small>{description}</small>
+              </span>
+              <span className="lux-switch"><i /></span>
+              <b>{aero[key] ? "ON" : "OFF"}</b>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (active === "glass") {
+    return (
+      <div className="mod-panel simple-step-panel">
+        <ChoiceHeader
+          title="Choose your window tint"
+          text="Lower percentages create a darker appearance."
+        />
+
+        <div className="premium-choice-grid">
+          {TINTS.map((x) => (
+            <button
+              key={x.id}
+              className={tint === x.id ? "active" : ""}
+              onClick={() => {
+                setTint(x.id);
+                activate();
+              }}
+            >
+              <span className="glass-sample" style={{ opacity: Math.max(.28, 1 - x.opacity) }} />
+              <span className="choice-text">
+                <strong>{x.name}</strong>
+                <small>{Math.round(x.opacity * 100)}% visibility</small>
+              </span>
+              <b>{tint === x.id ? "✓" : ""}</b>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (active === "carbon") {
+    return (
+      <div className="mod-panel simple-step-panel">
+        <ChoiceHeader
+          title="Carbon fibre package"
+          text="Apply or remove the carbon detail package."
+        />
+
+
+        <div className="premium-choice-grid carbon-finish-grid">
+          {[
+            ["gloss","Gloss Carbon"],
+            ["satin","Satin Carbon"],
+            ["forged","Forged Look"],
+          ].map(([id,name]) => (
+            <button key={id} className={carbonFinish === id ? "active" : ""}
+              onClick={() => { setCarbonFinish(id); setCarbon(true); activate(); }}>
+              <span className={`carbon-mini carbon-${id}`} />
+              <span className="choice-text"><strong>{name}</strong><small>{carbonFinish === id ? "Selected" : "Preview finish"}</small></span>
+              <b>{carbonFinish === id ? "✓" : ""}</b>
+            </button>
+          ))}
+        </div>
+
+        <button
+          className={`feature-selection-card carbon-selection ${carbon ? "active" : ""}`}
+          onClick={() => {
+            setCarbon((v) => !v);
+            activate();
+          }}
+        >
+          <span className="feature-visual carbon-pattern" />
+          <span className="choice-text">
+            <strong>Carbon Fibre Details</strong>
+            <small>{carbon ? "Currently applied to your build" : "Tap to add carbon details"}</small>
+          </span>
+          <span className="lux-switch"><i /></span>
+        </button>
+      </div>
+    );
+  }
+
+  if (active === "lights") {
+    return (
+      <div className="mod-panel simple-step-panel">
+        <ChoiceHeader
+          title="Lighting preview"
+          text="Switch the workshop and vehicle lights to compare the look."
+        />
+
+
+        <ChoiceHeader title="Headlight colour" text="Choose the live light colour and brightness." />
+        <div className="light-colour-row">
+          {[
+            ["#fff1d2","Warm White"],
+            ["#f5f7ff","Platinum White"],
+            ["#d9ecff","Ice White"],
+            ["#bdd9ff","Cool Blue"],
+          ].map(([hex,name]) => (
+            <button key={hex} className={lightColor === hex ? "active" : ""}
+              onClick={() => { setLightColor(hex); setLightsOn(true); activate(); }}>
+              <i style={{background:hex}} /><span>{name}</span>
+            </button>
+          ))}
+        </div>
+        <div className="clear-range-card">
+          <div className="range-card-head">
+            <span><small>BRIGHTNESS</small><strong>Headlight intensity</strong></span>
+            <b>{Math.round(lightIntensity * 100)}%</b>
+          </div>
+          <input type="range" min=".25" max="1.5" step=".05" value={lightIntensity}
+            onChange={(e) => { setLightIntensity(+e.target.value); setLightsOn(true); }} />
+        </div>
+
+        <button
+          className={`feature-selection-card light-selection ${lightsOn ? "active" : ""}`}
+          onClick={() => setLightsOn((v) => !v)}
+        >
+          <span className="feature-visual light-visual">✦</span>
+          <span className="choice-text">
+            <strong>{lightsOn ? "Lights On" : "Night Preview"}</strong>
+            <small>{lightsOn ? "Workshop and vehicle lighting enabled" : "Tap to restore full lighting"}</small>
+          </span>
+          <span className="lux-switch"><i /></span>
+        </button>
+      </div>
+    );
+  }
+
+  if (active === "presets") {
+    return (
+      <div className="mod-panel simple-step-panel">
+        <ChoiceHeader title="Signature build presets" text="Apply a complete premium configuration with one tap." />
+        <div className="build-preset-list">
+          {BUILD_PRESETS.map((preset) => (
+            <button key={preset.id} className={activePreset === preset.id ? "active" : ""}
+              onClick={() => applyBuildPreset(preset)}>
+              <span><strong>{preset.name}</strong><small>{preset.description}</small></span>
+              <b>{activePreset === preset.id ? "APPLIED ✓" : "APPLY"}</b>
+            </button>
+          ))}
+        </div>
+        <ChoiceHeader title="Compare your build" text="Switch between factory styling and your current configuration." />
+        <button className={`before-after-control ${beforeMode ? "active" : ""}`}
+          onClick={() => setBeforeMode((v) => !v)}>
+          <span><small>COMPARE MODE</small><strong>{beforeMode ? "Showing factory look" : "Showing your build"}</strong></span>
+          <b>{beforeMode ? "SHOW MY BUILD" : "SHOW FACTORY"}</b>
+        </button>
+        <button className={`clear-action-toggle ${demoMode ? "active" : ""}`}
+          onClick={() => { setDemoMode((v) => !v); setWheelSpin(!demoMode);  }}>
+          <span>Cinematic presentation</span><strong>{demoMode ? "STOP DEMO" : "START DEMO"}</strong>
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className={`app ${driveMode ? "driving" : ""} ${headlights ? "lights-on" : "lights-off"}`}>
-      <div className="aurora aurora-a" />
-      <div className="aurora aurora-b" />
-      <div className="grid-floor" />
-      <div className="noise-layer" />
+    <div className="mod-panel simple-step-panel">
+      <ChoiceHeader title={info?.title || "Customize"} text="Choose an option to preview it on the car." />
+    </div>
+  );
+}
 
+export default function App() {
+  const [rotation, setRotation] = useState(-.35);
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+  const [rotationStart, setRotationStart] = useState(0);
+  const [autoRotate, setAutoRotate] = useState(true);
+  const [view, setView] = useState("360");
+  const [zoom, setZoom] = useState(0);
+  const [lightsOn, setLightsOn] = useState(true);
+  const [paintTone, setPaintTone] = useState("navy");
+  const [customPaint, setCustomPaint] = useState("#ff5a1f");
+  const [customRimColor, setCustomRimColor] = useState("#fb0404");
+  const [customCaliperColor, setCustomCaliperColor] = useState("#d71920");
+  const [finish, setFinish] = useState("metallic");
+  const [rim, setRim] = useState("custom");
+  const [caliper, setCaliper] = useState("red");
+  const [tint, setTint] = useState("smoke");
+  const [carbon, setCarbon] = useState(true);
+  const [aero, setAero] = useState({ wing: true, lip: true, skirts: true, diffuser: true });
+  const [stance, setStance] = useState(.28);
+  const [steering, setSteering] = useState(0);
+  const [wheelSpin, setWheelSpin] = useState(false);
+  const [before, setBefore] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("paint");
+  const [environment, setEnvironment] = useState("studio");
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [mobileCustomizerOpen, setMobileCustomizerOpen] = useState(false);
+  const [lightColor, setLightColor] = useState("#f5f7ff");
+  const [lightIntensity, setLightIntensity] = useState(1);
+  const [paintGloss, setPaintGloss] = useState(.82);
+  const [metallicBoost, setMetallicBoost] = useState(.72);
+  const [rimScale, setRimScale] = useState(1);
+  const [caliperGloss, setCaliperGloss] = useState(.72);
+  const [carbonFinish, setCarbonFinish] = useState("gloss");
+  const [demoMode, setDemoMode] = useState(false);
+  const [beforeMode, setBeforeMode] = useState(false);
+  const [activePreset, setActivePreset] = useState("");
+
+  const [toast, setToast] = useState("");
+  const [faqOpen, setFaqOpen] = useState(0);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 2300);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const activate = () => setBefore(false);
+
+  const total = useMemo(() => {
+    let n = 0;
+    if (finish !== "solid") n += 18000;
+    if (rim !== "oem") n += 48000;
+    if (caliper !== "black") n += 18000;
+    if (tint !== "clear") n += 16000;
+    if (carbon) n += 48000;
+    if (aero.wing) n += 55000;
+    if (aero.lip) n += 28000;
+    if (aero.skirts) n += 42000;
+    if (aero.diffuser) n += 38000;
+    if (stance > .1) n += 42000;
+    return n;
+  }, [finish, rim, customRimColor, caliper, customCaliperColor, tint, carbon, aero, stance]);
+
+  const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(total);
+
+  const reset = () => {
+    setPaintTone("navy"); setFinish("metallic"); setRim("custom"); setCustomRimColor("rgb(251, 4, 4)"); setCaliper("red");
+    setTint("smoke"); setCarbon(true); setAero({wing:true,lip:true,skirts:true,diffuser:true});
+    setStance(.28); setSteering(0); setBefore(false); setView("360"); setZoom(0);
+    setToast("BUILD RESET");
+  };
+
+  const saveBuild = () => {
+    const build = { paintTone, customPaint, finish, rim, customRimColor, caliper, customCaliperColor, tint, carbon, aero, stance, steering, total };
+    localStorage.setItem("drive-mods-build", JSON.stringify(build));
+    setToast("BUILD SAVED TO THIS DEVICE");
+  };
+
+  const onPointerDown = e => {
+    setDragging(true); setAutoRotate(false); setDragStart(e.clientX); setRotationStart(rotation);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = e => {
+    if (!dragging || dragStart == null) return;
+    setRotation(rotationStart + (e.clientX - dragStart) * .008);
+  };
+  const endPointer = e => {
+    setDragging(false); setDragStart(null); e.currentTarget.releasePointerCapture?.(e.pointerId);
+  };
+
+
+  const applyBuildPreset = (preset) => {
+    setPaintTone(preset.paint);
+    setFinish(preset.finish);
+    setRim(preset.rim);
+    setCaliper(preset.caliper);
+    setTint(preset.tint);
+    setCarbon(preset.carbon);
+    setStance(preset.stance);
+    setAero({ ...preset.aero });
+    setActivePreset(preset.id);
+    setBeforeMode(false);
+    activate();
+  };
+
+  const applyAeroPreset = (preset) => {
+    setAero({ ...preset });
+    activate();
+  };
+
+  const selectCategory = id => {
+    setActiveCategory(id);
+    activate();
+
+    // Keep the complete car framed while a part is edited.
+    setView("360");
+    setZoom(0);
+    setAutoRotate(false);
+
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      setMobileCustomizerOpen(true);
+    }
+  };
+
+
+  useEffect(() => {
+    const nodes = [...document.querySelectorAll("[data-scroll-reveal]")];
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add("is-visible");
+      }),
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+    );
+    nodes.forEach(node => observer.observe(node));
+
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = max > 0 ? window.scrollY / max : 0;
+      document.documentElement.style.setProperty("--page-scroll", progress);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+
+  return (
+    <div className={`site ${lightsOn ? "lights-on" : "lights-off"} env-${environment}`}>
       {toast && <div className="toast">{toast}</div>}
 
-      {detailModal && (
-        <div className="detail-modal" role="dialog" aria-modal="true" aria-label={`${detailModal.item.title} details`}>
-          <button className="detail-modal-backdrop" aria-label="Close details" onClick={() => setDetailModal(null)} />
-          <article className="detail-modal-panel">
-            <button className="detail-close" onClick={() => setDetailModal(null)} aria-label="Close details">×</button>
-            <div className="detail-visual">
-              <span className="detail-index">{detailModal.item.number || detailModal.item.code}</span>
-              <PartIcon type={detailModal.item.icon} />
-              <small>{detailModal.kind === "part" ? detailModal.item.tag : "AUTO//MODS WORKSHOP SERVICE"}</small>
-            </div>
-            <div className="detail-copy">
-              <span className="section-code">FULL SYSTEM OVERVIEW</span>
-              <h2>{detailModal.item.title}</h2>
-              <p>{detailModal.item.text}</p>
-              <div className="detail-facts">
-                <div><small>TYPE</small><strong>{detailModal.kind === "part" ? "UPGRADE" : "WORKSHOP"}</strong></div>
-                <div><small>FITMENT</small><strong>VEHICLE SPECIFIC</strong></div>
-                <div><small>STATUS</small><strong>BUILD READY</strong></div>
-                {detailModal.item.price && <div><small>STARTING</small><strong>{detailModal.item.price.replace("FROM ", "")}</strong></div>}
-              </div>
-              <div className="detail-explain">
-                <h3>WHAT THE CLIENT GETS</h3>
-                <p>Vehicle-specific planning, compatibility checks, clear installation scope and a final workshop inspection before handover.</p>
-              </div>
-              <a href="#contact" className="cta-button" onClick={() => setDetailModal(null)}>PLAN THIS UPGRADE <span>↗</span></a>
-            </div>
-          </article>
-        </div>
-      )}
-
-      <header className="navbar">
-        <a className="brand" href="#home" aria-label="Auto Mods home">
-          <HeaderCarLogo />
-          <span className="brand-copy">
-            AUTO<span>//</span>MODS
-            <small>PERFORMANCE LAB</small>
-          </span>
+      <header className="topbar">
+        <a href="#home" className="brand">
+          <span className="brand-mark">⬡</span>
+          <span><strong>DRIVE MODS</strong><small>CUSTOMIZE BEYOND LIMITS</small></span>
         </a>
-
-        <nav className={mobileMenu ? "nav-links mobile-open" : "nav-links"}>
-          <a href="#home">3D CAR</a>
-          <a href="#parts">PARTS</a>
-          <a href="#services">SERVICES</a>
-          <a href="#rates">RATE CARD</a>
-          <a href="#process">HOW IT WORKS</a>
-          <a href="#contact">CONTACT</a>
+        <nav className={mobileMenu ? "open" : ""}>
+          <a href="#home">HOME</a><a href="#customize">CUSTOMIZE</a><a href="#packages">PACKAGES</a>
+          <a href="#gallery">GALLERY</a><a href="#services">SERVICES</a><a href="#about">ABOUT</a><a href="#contact">CONTACT</a>
         </nav>
-
-        <button
-          className={headlights ? "nav-light active" : "nav-light"}
-          onClick={() => setHeadlights((value) => !value)}
-          aria-pressed={headlights}
-          aria-label={headlights ? "Turn workshop lights off" : "Turn workshop lights on"}
-        >
-          <HeaderLightIcon active={headlights} />
-          <span className="nav-light-copy">
-            <strong>{headlights ? "ON" : "OFF"}</strong>
-          </span>
-        </button>
-
-        <button
-          className={driveMode ? "nav-drive active" : "nav-drive"}
-          onClick={toggleDrive}
-          aria-pressed={driveMode}
-          aria-label={driveMode ? "Return" : "Start"}
-        >
-          <span className="nav-drive-led" aria-hidden="true" />
-          <strong>{driveMode ? "RETURN" : "START"}</strong>
-        </button>
-
-        <button
-          className={mobileMenu ? "menu-button active" : "menu-button"}
-          onClick={() => setMobileMenu((value) => !value)}
-          aria-label={mobileMenu ? "Close navigation" : "Open navigation"}
-          aria-expanded={mobileMenu}
-        >
-          <span className="menu-line menu-line-top" />
-          <span className="menu-line menu-line-mid" />
-          <span className="menu-line menu-line-bottom" />
-        </button>
+        <div className="nav-actions">
+          <button className="icon-button" aria-label="Search">⌕</button>
+          <button className={`light-switch ${lightsOn ? "active" : ""}`} onClick={() => setLightsOn(v => !v)}>
+            <span>☼</span><i /><b>{lightsOn ? "LIGHT ON" : "LIGHT OFF"}</b>
+          </button>
+          <button className="menu" onClick={() => setMobileMenu(v => !v)} aria-label="Menu"><i/><i/><i/></button>
+        </div>
       </header>
 
       <main>
         <section className="hero" id="home">
-          <div className="hero-kicker">
-            <span className="signal-dot" />
-            INTERACTIVE PERFORMANCE GARAGE / LIVE
+          <div className="hero-studio realistic-workshop-overlay" aria-hidden="true">
+            <div className="garage-vignette" />
+            <div className="garage-film-grain" />
+            <div className="garage-bay-label">
+              <span>PERFORMANCE ATELIER</span>
+              <b>BAY 01</b>
+            </div>
+            <div className="garage-brand-sign">
+              <small>PRECISION PERFORMANCE</small>
+              <strong>DRIVE MODS</strong>
+              <i />
+            </div>
+          </div>
+          <div className="hero-copy">
+            <small>PERFORMANCE ATELIER // MUMBAI</small>
+            <h1>ENGINEERED<br/><span>TO BE DIFFERENT.</span></h1>
+            <p>Configure your build inside our interactive performance workshop.</p>
+            <a href="#customize" className="gold-button">ENTER THE WORKSHOP <b>→</b></a>
           </div>
 
-          <div className="hero-title-wrap">
-            <h1>
-              BUILD THE
-              <span>MACHINE.</span>
-            </h1>
-            <p>
-              Tap the real 3D car to control wheels, doors, lights and engine. Activate DRIVE LOOP to watch it run left-to-right continuously, then return it to an oversized hero view.
-            </p>
+          <div className="hero-status" aria-hidden="true">
+            <div><i className="status-live" /><span><small>CONFIGURATOR</small><strong>LIVE</strong></span></div>
+            <div><span><small>RENDER</small><strong>REAL-TIME 3D</strong></span></div>
+            <div><span><small>CONTROL</small><strong>DRAG / ZOOM</strong></span></div>
           </div>
+
+          <div className="hero-corner hero-corner-tl" aria-hidden="true" />
+          <div className="hero-corner hero-corner-br" aria-hidden="true" />
+
+          <aside className="view-modes">
+            <strong>VIEW MODES</strong>
+            {[
+              ["360","◎","360°"],["front","▱","FRONT"],["rear","▱","REAR"],
+              ["left","▱","LEFT"],["right","▱","RIGHT"],["top","▣","TOP"],
+            ].map(([id,icon,label]) => (
+              <button key={id} className={view === id ? "active" : ""} onClick={() => { setView(id); setAutoRotate(id === "360"); }}>{icon}<span>{label}</span></button>
+            ))}
+          </aside>
+
+          {/* MOBILE: direct left-side entry to the configurator */}
+          <button
+            type="button"
+            className={`mobile-side-customize ${mobileCustomizerOpen ? "active" : ""}`}
+            onClick={() => {
+              setMobileCustomizerOpen(true);
+              setAutoRotate(false);
+            }}
+            aria-label="Open car customizer"
+            aria-expanded={mobileCustomizerOpen}
+            aria-controls="mobile-customizer"
+          >
+            <span className="mobile-side-customize-icon">⚙</span>
+            <span className="mobile-side-customize-text">
+              <small>EDIT CAR</small>
+              <strong>CUSTOMIZE</strong>
+            </span>
+            <span className="mobile-side-customize-arrow">›</span>
+          </button>
 
           <div
-            className={`hero-car-stage ${dragging ? "is-dragging" : ""} ${driveMode ? "is-driving" : ""}`}
+            className={`car-stage ${dragging ? "dragging" : ""}`}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
+            onPointerUp={endPointer}
+            onPointerCancel={endPointer}
+            onWheel={e => setZoom(z => THREE.MathUtils.clamp(z + (e.deltaY > 0 ? -.04 : .04), 0, 1))}
           >
-            <div className={`drive-road ${driveMode ? "active" : ""}`} aria-hidden="true">
-              <span className="road-edge road-edge-top" />
-              <span className="road-center-line" />
-              <span className="road-edge road-edge-bottom" />
-              <b>ROAD LOOP // FORWARD →</b>
-            </div>
             <Canvas
-              dpr={isMobile ? [0.75, 1.1] : [1, 1.7]}
-              camera={{ position: [6.4, 2.15, 7.4], fov: 34 }}
-              gl={{ antialias: true, alpha: true }}
-              onCreated={({ gl }) => {
+              shadows
+              dpr={[1, 1.65]}
+              camera={{ position:[6,1.9,7.1], fov:34, near:.1, far:100 }}
+              gl={{
+                antialias:true,
+                alpha:true,
+                powerPreference:"high-performance",
+              }}
+              onCreated={({gl}) => {
                 gl.toneMapping = THREE.ACESFilmicToneMapping;
-                gl.toneMappingExposure = 1.2;
+                gl.toneMappingExposure = lightsOn ? 1.08 : .72;
                 gl.outputColorSpace = THREE.SRGBColorSpace;
+                gl.shadowMap.enabled = true;
+                gl.shadowMap.type = THREE.PCFSoftShadowMap;
               }}
             >
-              <CarScene
-                rotation={rotation}
-                leftDoorOpen={leftDoorOpen}
-                rightDoorOpen={rightDoorOpen}
-                wheelsMoving={wheelsMoving}
-                headlights={headlights}
-                bonnetOpen={bonnetOpen}
-                bootOpen={bootOpen}
-                engineOn={engineOn}
-                driveMode={driveMode}
-                paintTone={paintTone}
-                customPaint={customPaint}
-                onPartClick={handlePartClick}
-                onCapabilities={setCapabilities}
-                isMobile={isMobile}
+              <PerformanceController lightsOn={lightsOn} />
+              <StudioScene
+                rotation={rotation} autoRotate={autoRotate && view === "360"} lightsOn={lightsOn}
+                paintTone={paintTone} customPaint={customPaint} finish={finish} rim={rim}
+            customRimColor={customRimColor}
+                caliper={caliper} customCaliperColor={customCaliperColor} tint={tint} carbon={carbon} aero={aero} stance={stance}
+                steering={steering} wheelSpin={wheelSpin} before={before} view={view} zoom={zoom}
+              
+                lightColor={lightColor}
+                lightIntensity={lightIntensity}
+                paintGloss={paintGloss}
+                metallicBoost={metallicBoost}
+                rimScale={rimScale}
+                caliperGloss={caliperGloss}
+                carbonFinish={carbonFinish}
+                beforeMode={beforeMode}
               />
             </Canvas>
-
-            <div className="stage-ui stage-ui-left">
-              <span>DRAG / SWIPE</span>
-              <strong>360°</strong>
-              <small>AUTO {autoRotate ? "ON" : "PAUSED"}</small>
-            </div>
-
-            <div className="stage-ui stage-ui-right">
-              <span>LIVE MODEL</span>
-              <strong>PROJECT // X</strong>
-              <small>
-                {paintTone === "custom"
-                  ? `CUSTOM ${customPaint.toUpperCase()}`
-                  : PAINTS.find((paint) => paint.id === paintTone)?.name} / LIVE PAINT
-              </small>
-            </div>
-
-            <div className="tap-hint">
-              <span className="tap-ring" />
-              {driveMode ? "FORWARD ROAD LOOP / TAP RETURN TO HERO" : "TAP THE CAR / CLICK AGAIN TO REVERSE"}
-            </div>
           </div>
 
-          <div className="hero-controls-shell">
-            <button className="control-arrow control-arrow-left" onClick={() => scrollHeroControls(-1)} aria-label="Previous controls">←</button>
-            <div className="hero-controls" ref={heroControlRef}>
-            <button
-              className={driveMode ? "hero-control drive-card active" : "hero-control drive-card"}
-              onClick={toggleDrive}
-            >
-              <span className="mini-part mini-drive" />
-              <div>
-                <small>DRIVING EXPERIENCE</small>
-                <strong>{driveMode ? "RETURN TO STUDIO" : "DRIVE THE CAR"}</strong>
-              </div>
-              <em>{driveMode ? "LIVE DRIVE" : "START →"}</em>
-            </button>
+          <div className="interaction-hint"><span>DRAG TO ROTATE</span><i/><span>SCROLL TO ZOOM</span><i/><span>LIVE WORKSHOP PREVIEW</span></div>
 
-            <button
-              className={leftDoorOpen || rightDoorOpen ? "hero-control active" : "hero-control"}
-              onClick={toggleBothDoors}
-            >
-              <span className="mini-part mini-door" />
-              <div>
-                <small>CABIN ACCESS</small>
-                <strong>{leftDoorOpen || rightDoorOpen ? "CLOSE DOORS" : "OPEN DOORS"}</strong>
-              </div>
-              <em>{leftDoorOpen || rightDoorOpen ? "OPEN" : "CLOSED"}</em>
-            </button>
-
-            <button
-              className={wheelsMoving || driveMode ? "hero-control active" : "hero-control"}
-              onClick={() => setWheelsMoving((value) => !value)}
-            >
-              <span className={`mini-part mini-wheel ${wheelsMoving ? "spin" : ""}`} />
-              <div>
-                <small>WHEEL MOTION</small>
-                <strong>{wheelsMoving || driveMode ? "STOP WHEELS" : "SPIN WHEELS"}</strong>
-              </div>
-              <em>{wheelsMoving || driveMode ? "SPINNING" : "STOPPED"}</em>
-            </button>
-
-            <button
-              className={headlights ? "hero-control active" : "hero-control"}
-              onClick={() => setHeadlights((value) => !value)}
-            >
-              <span className="mini-part mini-light" />
-              <div>
-                <small>EXTERIOR LIGHTING</small>
-                <strong>{headlights ? "LIGHTS ON" : "LIGHTS OFF"}</strong>
-              </div>
-              <em>{headlights ? "ON" : "OFF"}</em>
-            </button>
-
-            <button
-              className={engineOn ? "hero-control active" : "hero-control"}
-              onClick={() => setEngineOn((value) => !value)}
-            >
-              <span className="mini-part mini-piston" />
-              <div>
-                <small>POWERTRAIN</small>
-                <strong>{engineOn ? "STOP ENGINE" : "START ENGINE"}</strong>
-              </div>
-              <em>{engineOn ? "RUNNING" : "OFF"}</em>
-            </button>
-
-            <button
-              className={`hero-control ${bonnetOpen ? "active" : ""} ${!capabilities.bonnet ? "locked" : ""}`}
-              onClick={toggleBonnet}
-            >
-              <span className="mini-part mini-panel" />
-              <div>
-                <small>ENGINE BAY ACCESS</small>
-                <strong>{bonnetOpen ? "CLOSE HOOD" : "OPEN HOOD"}</strong>
-              </div>
-              <em>{capabilities.bonnet ? (bonnetOpen ? "OPEN" : "CLOSED") : "FUSED"}</em>
-            </button>
-
-            <button
-              className={`hero-control ${bootOpen ? "active" : ""} ${!capabilities.boot ? "locked" : ""}`}
-              onClick={toggleBoot}
-            >
-              <span className="mini-part mini-panel rear" />
-              <div>
-                <small>LUGGAGE ACCESS</small>
-                <strong>{bootOpen ? "CLOSE TRUNK" : "OPEN TRUNK"}</strong>
-              </div>
-              <em>{capabilities.boot ? (bootOpen ? "OPEN" : "CLOSED") : "FUSED"}</em>
-            </button>
-            </div>
-            <button className="control-arrow control-arrow-right" onClick={() => scrollHeroControls(1)} aria-label="Next controls">→</button>
+          <div className="compare-reset">
+            <button className={before ? "active" : ""} onClick={() => setBefore(v => !v)}>BEFORE / AFTER <span>◐</span></button>
+            <button onClick={reset}>RESET</button>
           </div>
-          <div className="hero-paint-dock">
-            <div className="paint-lab">
-              <div className="paint-lab-head">
-                <span>METALLIC COLOR LAB</span>
-                <strong>
-                  {paintTone === "custom"
-                    ? `CUSTOM ${customPaint.toUpperCase()}`
-                    : PAINTS.find((paint) => paint.id === paintTone)?.name}
-                </strong>
+
+          <aside className="desktop-customizer" id="customize">
+            <div className="customizer-header">
+              <div>
+                <small>DRIVE MODS // CONFIGURATOR</small>
+                <strong>CUSTOMIZE YOUR BUILD</strong>
               </div>
+              <span className="customizer-live"><i /> LIVE 3D</span>
+            </div>
 
-              <div className="swipe-shell paint-swipe-shell">
-                <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(paintRef, -1)} aria-label="Previous paint colours">‹</button>
-                <div className="paint-switch" ref={paintRef} aria-label="Metallic exterior colour presets">
-                {PAINTS.map((paint) => (
-                  <button
-                    key={paint.id}
-                    className={paintTone === paint.id ? "active" : ""}
-                    onClick={() => setPaintTone(paint.id)}
-                    title={paint.name}
-                    aria-label={`Paint ${paint.name}`}
-                  >
-                    <span
-                      className="paint-dot metallic-dot"
-                      style={{
-                        background: `linear-gradient(135deg, rgba(255,255,255,.72) 0%, ${paint.hex} 28%, ${paint.hex} 63%, rgba(0,0,0,.7) 100%)`,
-                      }}
-                    />
-                    <small>{paint.name}</small>
-                  </button>
-                ))}
-                </div>
-                <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(paintRef, 1)} aria-label="Next paint colours">›</button>
+            <div className="customizer-guide">
+              <div className="customizer-guide-title">
+                <span>STEP 1</span>
+                <div><strong>What would you like to change?</strong><small>Choose one area. Changes appear on the car instantly.</small></div>
               </div>
+              <div className="customizer-category-list">
+                {CATEGORIES.map(([id,icon]) => {
+                  const info = CATEGORY_INFO[id];
+                  return (
+                    <button key={id} className={activeCategory === id ? "active" : ""} onClick={() => selectCategory(id)}>
+                      <span className="category-accent" style={{ background: info.accent }} />
+                      <i>{icon}</i>
+                      <span className="category-copy"><strong>{info.title}</strong><small>{info.description}</small></span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="customizer-choice-head">
+              <span>STEP 2</span>
+              <div><strong>{CATEGORY_INFO[activeCategory].title}</strong><small>Tap an option below to preview it live.</small></div>
+            </div>
 
-              <div className={`custom-paint ${paintTone === "custom" ? "active" : ""}`}>
-                <div className="custom-paint-copy">
-                  <span>CUSTOM COLOR</span>
-                  <strong>CHOOSE ANY SHADE</strong>
-                  <small>Tap the wheel, select your colour and see it live on the 3D car.</small>
-                </div>
+            <div className="desktop-control-area">
+              <ModPanel
+                active={activeCategory}
+                paintTone={paintTone} setPaintTone={setPaintTone}
+                customPaint={customPaint} setCustomPaint={setCustomPaint}
+                finish={finish} setFinish={setFinish}
+                rim={rim} setRim={setRim}
+                customRimColor={customRimColor} setCustomRimColor={setCustomRimColor}
+                caliper={caliper} setCaliper={setCaliper}
+                customCaliperColor={customCaliperColor} setCustomCaliperColor={setCustomCaliperColor}
+                tint={tint} setTint={setTint}
+                carbon={carbon} setCarbon={setCarbon}
+                aero={aero} setAero={setAero}
+                stance={stance} setStance={setStance}
+                steering={steering} setSteering={setSteering}
+                lightsOn={lightsOn} setLightsOn={setLightsOn}
+                wheelSpin={wheelSpin} setWheelSpin={setWheelSpin}
+                lightColor={lightColor} setLightColor={setLightColor}
+                    lightIntensity={lightIntensity} setLightIntensity={setLightIntensity}
+                    paintGloss={paintGloss} setPaintGloss={setPaintGloss}
+                    metallicBoost={metallicBoost} setMetallicBoost={setMetallicBoost}
+                    rimScale={rimScale} setRimScale={setRimScale}
+                    caliperGloss={caliperGloss} setCaliperGloss={setCaliperGloss}
+                    carbonFinish={carbonFinish} setCarbonFinish={setCarbonFinish}
+                    demoMode={demoMode} setDemoMode={setDemoMode}
+                    beforeMode={beforeMode} setBeforeMode={setBeforeMode}
+                    activePreset={activePreset}
+                    applyBuildPreset={applyBuildPreset}
+                    applyAeroPreset={applyAeroPreset}
+                    activate={activate}
+              />
+            </div>
 
-                <label className="color-wheel-control" title="Choose a custom car colour">
-                  <input
-                    type="color"
-                    value={customPaint}
-                    onChange={(event) => {
-                      setCustomPaint(event.target.value);
-                      setPaintTone("custom");
-                    }}
-                    onClick={() => setPaintTone("custom")}
-                    aria-label="Choose custom exterior colour"
-                  />
-                  <span
-                    className="color-wheel-preview"
-                    style={{ background: customPaint }}
-                  />
-                  <b>COLOR WHEEL</b>
-                </label>
+            <div className="sidebar-build-summary">
+              <div>
+                <small>ESTIMATED MODIFICATIONS</small>
+                <strong>{money}</strong>
+              </div>
+              <div className="sidebar-build-actions">
+                <button onClick={reset}>RESET</button>
+                <button className="sidebar-save" onClick={saveBuild}>SAVE BUILD</button>
+              </div>
+            </div>
+          </aside>
 
+          <button
+            className={`mobile-customize-trigger ${mobileCustomizerOpen ? "is-open" : ""}`}
+            onClick={() => setMobileCustomizerOpen(v => !v)}
+            aria-expanded={mobileCustomizerOpen}
+            aria-controls="mobile-customizer"
+          >
+            <span className="mobile-trigger-icon">⚙</span>
+            <span>
+              <small>LIVE 3D CONFIGURATOR</small>
+              <strong>{mobileCustomizerOpen ? "CLOSE CUSTOMIZER" : "CUSTOMIZE BUILD"}</strong>
+            </span>
+            <b>{mobileCustomizerOpen ? "×" : "⌃"}</b>
+          </button>
+
+          <div
+            className={`mobile-customizer-backdrop ${mobileCustomizerOpen ? "open" : ""}`}
+            onClick={() => setMobileCustomizerOpen(false)}
+            aria-hidden="true"
+          />
+
+          <aside
+            className={`mobile-customizer ${mobileCustomizerOpen ? "open" : ""}`}
+            id="mobile-customizer"
+          >
+            <div className="mobile-drawer-handle" />
+
+            <div className="mobile-customizer-head">
+              <div>
+                <small>YOUR CAR // LIVE PREVIEW</small>
+                <strong>WHAT DO YOU WANT TO CHANGE?</strong>
+              </div>
+              <button
+                onClick={() => setMobileCustomizerOpen(false)}
+                aria-label="Close customizer"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mobile-category-tabs">
+              {CATEGORIES.map(([id,icon,label]) => (
                 <button
-                  type="button"
-                  className="use-custom-paint"
-                  onClick={() => setPaintTone("custom")}
+                  key={id}
+                  className={activeCategory === id ? "active" : ""}
+                  onClick={() => selectCategory(id)}
                 >
-                  USE CUSTOM
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="hero-spec-strip">
-            <div>
-              <small>LIVE POWER</small>
-              <strong>{engineOn ? "428" : "000"}<b> HP</b></strong>
-            </div>
-            <div>
-              <small>TORQUE MAP</small>
-              <strong>{engineOn ? "510" : "---"}<b> NM</b></strong>
-            </div>
-            <div>
-              <small>WHEEL STATE</small>
-              <strong>{wheelsMoving || driveMode ? "ACTIVE" : "READY"}</strong>
-            </div>
-            <div>
-              <small>DRIVE MODE</small>
-              <strong>{driveMode ? "LOOPING" : "HERO"}</strong>
-            </div>
-          </div>
-        </section>
-
-        <section className="parts-section" id="parts">
-          <div className="section-heading">
-            <div>
-              <span className="section-code">01 // HARDWARE WALL</span>
-              <h2>
-                PICK YOUR
-                <span>WEAPONRY.</span>
-              </h2>
-            </div>
-            <p>
-              Every content block is styled like a real workshop component — wheel, rotor,
-              exhaust, spring, light or aero piece — instead of a generic website card.
-            </p>
-          </div>
-
-          <div className="swipe-shell content-swipe-shell">
-            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(partsRef, -1)} aria-label="Previous modification cards">‹</button>
-            <div className="parts-grid" ref={partsRef}>
-            {MODS.map((mod) => (
-              <button
-                className={selectedMod === mod.id ? "part-card selected" : "part-card"}
-                key={mod.id}
-                onClick={() => {
-                  setSelectedMod(mod.id);
-                  openDetail("part", mod);
-                }}
-              >
-                <div className="part-card-head">
-                  <span>{mod.number}</span>
-                  <small>{mod.tag}</small>
-                </div>
-                <PartIcon type={mod.icon} />
-                <h3>{mod.title}</h3>
-                <p>{mod.text}</p>
-                <div className="part-card-foot">
-                  <strong>{mod.price}</strong>
-                  <span>OPEN FULL SCREEN ↗</span>
-                </div>
-              </button>
-            ))}
-                      </div>
-            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(partsRef, 1)} aria-label="Next modification cards">›</button>
-          </div>
-        </section>
-
-        <section className="build-lab" id="lab">
-          <div className="lab-rotor" aria-hidden="true">
-            <span className="rotor-center" />
-            <span className="rotor-caliper" />
-          </div>
-
-          <div className="lab-copy">
-            <span className="section-code">02 // SELECTED SYSTEM</span>
-            <small className="selected-tag">{selected.tag}</small>
-            <h2>{selected.title}</h2>
-            <p>{selected.text}</p>
-            <div className="lab-readouts">
-              <div>
-                <small>PACKAGE</small>
-                <strong>{selected.number}</strong>
-              </div>
-              <div>
-                <small>ENTRY</small>
-                <strong>{selected.price.replace("FROM ", "")}</strong>
-              </div>
-              <div>
-                <small>STATUS</small>
-                <strong>READY</strong>
-              </div>
-            </div>
-            <a href="#contact" className="cta-button">
-              ADD TO BUILD <span>↗</span>
-            </a>
-          </div>
-        </section>
-
-        <section className="garage-strip">
-          <div className="garage-item">
-            <span className="garage-disc" />
-            <div>
-              <small>PRECISION</small>
-              <strong>LASER ALIGNMENT</strong>
-            </div>
-          </div>
-          <div className="garage-item">
-            <span className="garage-coil" />
-            <div>
-              <small>CHASSIS</small>
-              <strong>SETUP & CORNER BALANCE</strong>
-            </div>
-          </div>
-          <div className="garage-item">
-            <span className="garage-pipe" />
-            <div>
-              <small>FLOW</small>
-              <strong>CUSTOM EXHAUST FABRICATION</strong>
-            </div>
-          </div>
-        </section>
-
-        <section className="systems-section">
-          <div className="section-heading compact">
-            <div>
-              <span className="section-code">03 // GARAGE SYSTEMS</span>
-              <h2>MORE THAN <span>PARTS.</span></h2>
-            </div>
-            <p>Tap each workshop system to understand how the full build comes together.</p>
-          </div>
-          <div className="swipe-shell content-swipe-shell">
-            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(systemsRef, -1)} aria-label="Previous garage systems">‹</button>
-            <div className="systems-grid" ref={systemsRef}>
-            {[
-              ["DYNO", "POWER VALIDATION", "Before/after power runs and safe map verification."],
-              ["FITMENT", "WHEEL GEOMETRY", "Offset, clearance and stance checked before installation."],
-              ["BRAKE", "HEAT MANAGEMENT", "Rotor, pad and fluid packages built around real usage."],
-              ["DETAIL", "FINISH BAY", "PPF, ceramic and final presentation after the mechanical work."],
-            ].map(([code, title, text]) => (
-              <button className="system-card" key={code} onClick={() => setToast(`${title} // ${text}`)}>
-                <span className="system-dial"><i /></span>
-                <small>{code}</small>
-                <strong>{title}</strong>
-                <p>{text}</p>
-                <b>TAP DETAILS ↗</b>
-              </button>
-            ))}
-                      </div>
-            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(systemsRef, 1)} aria-label="Next garage systems">›</button>
-          </div>
-        </section>
-
-        <section className="services-section" id="services">
-          <div className="section-heading">
-            <div>
-              <span className="section-code">04 // COMPLETE WORKSHOP SERVICES</span>
-              <h2>ONE GARAGE. <span>EVERY UPGRADE.</span></h2>
-            </div>
-            <p>Clients can understand exactly what the workshop handles before they call — from simple fitment jobs to complete visual and performance builds.</p>
-          </div>
-
-          <div className="swipe-shell content-swipe-shell">
-            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(servicesRef, -1)} aria-label="Previous workshop services">‹</button>
-            <div className="services-grid" ref={servicesRef}>
-            {SERVICES.map((service) => (
-              <button
-                className="service-card"
-                key={service.code}
-                onClick={() => openDetail("service", service)}
-              >
-                <span className="service-code">{service.code}</span>
-                <PartIcon type={service.icon} />
-                <div>
-                  <small>WORKSHOP SERVICE</small>
-                  <h3>{service.title}</h3>
-                  <p>{service.text}</p>
-                </div>
-                <b>OPEN FULL SCREEN ↗</b>
-              </button>
-            ))}
-                      </div>
-            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(servicesRef, 1)} aria-label="Next workshop services">›</button>
-          </div>
-        </section>
-
-        <section className="rate-section" id="rates">
-          <div className="rate-intro">
-            <span className="section-code">05 // INDICATIVE RATE CARD</span>
-            <h2>CLEAR STARTING <span>PRICES.</span></h2>
-            <p>Simple starting prices help customers plan a build before visiting. Final pricing depends on the vehicle, parts selected, condition, fabrication and scope of work.</p>
-            <div className="rate-note"><span>!</span> DEMO RATE CARD — EDIT THESE PRICES TO MATCH THE WORKSHOP BEFORE PUBLISHING.</div>
-          </div>
-
-          <div className="modifier-rate-board">
-            <div className="rate-board-top">
-              <div><span>SHOP RATE // LIVE MENU</span><strong>MODIFICATION BAY</strong></div>
-              <div className="rate-board-status"><i /> QUOTE READY</div>
-            </div>
-            <div className="rate-card-grid">
-              {RATE_CARD.map(([service, price, note], index) => (
-                <button className="rate-mod-card" key={service} onClick={() => setToast(`${service.toUpperCase()} // ${price}`)}>
-                  <span className="rate-mod-index">{String(index + 1).padStart(2, "0")}</span>
-                  <div className="rate-mod-copy">
-                    <small>{index < 4 ? "SETUP" : index < 8 ? "CHASSIS / BRAKE" : index < 12 ? "PERFORMANCE / STYLE" : "FINISH / CALIBRATION"}</small>
-                    <strong>{service}</strong>
-                    <p>{note}</p>
-                  </div>
-                  <div className="rate-mod-price"><small>STARTING</small><b>{price}</b></div>
-                  <span className="rate-mod-arrow">↗</span>
+                  <i>{icon}</i>
+                  <span>{label}</span>
                 </button>
               ))}
             </div>
-            <div className="rate-board-foot"><span>LABOUR + FITMENT + VEHICLE CHECK</span><b>FINAL QUOTE AFTER INSPECTION</b></div>
+
+            <div className="mobile-active-category">
+              <span>NOW EDITING</span>
+              <strong>{CATEGORY_INFO[activeCategory].title}</strong>
+              <i>CHANGES APPEAR LIVE</i>
+            </div>
+
+            <div className="mobile-control-area">
+              <ModPanel
+                active={activeCategory}
+                paintTone={paintTone} setPaintTone={setPaintTone}
+                customPaint={customPaint} setCustomPaint={setCustomPaint}
+                finish={finish} setFinish={setFinish}
+                rim={rim} setRim={setRim}
+                customRimColor={customRimColor} setCustomRimColor={setCustomRimColor}
+                caliper={caliper} setCaliper={setCaliper}
+                customCaliperColor={customCaliperColor} setCustomCaliperColor={setCustomCaliperColor}
+                tint={tint} setTint={setTint}
+                carbon={carbon} setCarbon={setCarbon}
+                aero={aero} setAero={setAero}
+                stance={stance} setStance={setStance}
+                steering={steering} setSteering={setSteering}
+                lightsOn={lightsOn} setLightsOn={setLightsOn}
+                wheelSpin={wheelSpin} setWheelSpin={setWheelSpin}
+                lightColor={lightColor} setLightColor={setLightColor}
+                    lightIntensity={lightIntensity} setLightIntensity={setLightIntensity}
+                    paintGloss={paintGloss} setPaintGloss={setPaintGloss}
+                    metallicBoost={metallicBoost} setMetallicBoost={setMetallicBoost}
+                    rimScale={rimScale} setRimScale={setRimScale}
+                    caliperGloss={caliperGloss} setCaliperGloss={setCaliperGloss}
+                    carbonFinish={carbonFinish} setCarbonFinish={setCarbonFinish}
+                    demoMode={demoMode} setDemoMode={setDemoMode}
+                    beforeMode={beforeMode} setBeforeMode={setBeforeMode}
+                    activePreset={activePreset}
+                    applyBuildPreset={applyBuildPreset}
+                    applyAeroPreset={applyAeroPreset}
+                    activate={activate}
+              />
+            </div>
+
+            <div className="mobile-build-footer">
+              <div>
+                <small>ESTIMATED MODS</small>
+                <strong>{money}</strong>
+              </div>
+              <button onClick={saveBuild}>SAVE BUILD</button>
+            </div>
+          </aside>
+        </section>
+
+        <section className="configurator configurator-after-hero">
+          <div className="feature-strip">
+            <div><b>⚙</b><span><strong>300+</strong><small>PERFORMANCE PARTS</small></span></div>
+            <div><b>▱</b><span><strong>50+</strong><small>PREMIUM BRANDS</small></span></div>
+            <div className="passion">— DRIVEN BY PASSION —</div>
+            <div><b>◎</b><span><strong>CUSTOM BUILDS</strong><small>VISUAL FIRST</small></span></div>
+            <div><b>◉</b><span><strong>EXPERT SUPPORT</strong><small>BUILD GUIDANCE</small></span></div>
+            <a href="#contact">GET A QUOTE →</a>
           </div>
         </section>
 
-        <section className="packages-section">
-          <div className="section-heading compact">
-            <div>
-              <span className="section-code">06 // BUILD STARTERS</span>
-              <h2>CHOOSE A <span>DIRECTION.</span></h2>
-            </div>
-            <p>These packages are conversation starters, not fixed bundles. Every build is adjusted to the vehicle and customer.</p>
+
+        <section className="brand-marquee" aria-label="Drive Mods capabilities">
+          <div className="marquee-track">
+            {[0,1].map(copy => (
+              <div className="marquee-group" key={copy} aria-hidden={copy === 1}>
+                <span>FORGED WHEELS</span><i>✦</i><span>PRECISION FITMENT</span><i>✦</i>
+                <span>CARBON AERO</span><i>✦</i><span>PERFORMANCE BRAKES</span><i>✦</i>
+                <span>COILOVER SETUP</span><i>✦</i><span>PREMIUM FINISH</span><i>✦</i>
+              </div>
+            ))}
           </div>
-          <div className="swipe-shell content-swipe-shell">
-            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(packagesRef, -1)} aria-label="Previous build package">‹</button>
-            <div className="package-grid" ref={packagesRef}>
-            {BUILD_PACKAGES.map((pkg, index) => (
-              <article className={`package-card package-${index + 1}`} key={pkg.name}>
-                <span className="package-index">0{index + 1}</span>
-                <small>{pkg.tag}</small>
-                <h3>{pkg.name}</h3>
-                <strong>{pkg.price}</strong>
-                <div className="package-list">
-                  {pkg.items.map((item) => <span key={item}><i />{item}</span>)}
-                </div>
-                <a href="#contact">PLAN THIS BUILD <b>↗</b></a>
+        </section>
+
+        <section className="stats-deck section scroll-reveal" data-scroll-reveal>
+          <div className="stats-copy">
+            <small>DRIVE MODS // PERFORMANCE LAB</small>
+            <h2>DESIGNED TO FEEL<br/><span>ONE OF ONE.</span></h2>
+            <p>A premium digital-first workshop experience where customers can understand the direction of a build before committing to parts.</p>
+          </div>
+          <div className="stats-grid">
+            {STATS.map(([value,label], index) => (
+              <article key={label}>
+                <span>0{index + 1}</span>
+                <strong>{value}</strong>
+                <small>{label}</small>
+                <i />
               </article>
             ))}
-                      </div>
-            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(packagesRef, 1)} aria-label="Next build package">›</button>
           </div>
         </section>
 
-        <section className="trust-section">
-          <div className="trust-marquee" aria-hidden="true">
-            <div className="trust-marquee-track">
-              <div className="trust-marquee-group">
-                <span>FITMENT CHECK</span><i />
-                <span>ROAD-READY SETUP</span><i />
-                <span>CLEAR QUOTATION</span><i />
-                <span>PARTS GUIDANCE</span><i />
-                <span>FINAL INSPECTION</span><i />
-                <span>AFTERCARE SUPPORT</span><i />
-              </div>
-              <div className="trust-marquee-group" aria-hidden="true">
-                <span>FITMENT CHECK</span><i />
-                <span>ROAD-READY SETUP</span><i />
-                <span>CLEAR QUOTATION</span><i />
-                <span>PARTS GUIDANCE</span><i />
-                <span>FINAL INSPECTION</span><i />
-                <span>AFTERCARE SUPPORT</span><i />
-              </div>
-            </div>
+        <section className="capabilities section scroll-reveal" data-scroll-reveal>
+          <div className="section-head">
+            <div><small>THE MODIFICATION EXPERIENCE</small><h2>MORE THAN <span>A PARTS LIST.</span></h2></div>
+            <p className="section-lead">Every choice is presented as part of one connected build — visual direction, fitment, performance and finish.</p>
           </div>
-          <div className="trust-grid">
-            {[
-              ["01", "VEHICLE-FIRST ADVICE", "Recommendations are based on your exact car, not a one-size-fits-all parts list."],
-              ["02", "BUDGET PRIORITIES", "We can split a large build into sensible stages so you know what to do first and what can wait."],
-              ["03", "FITMENT BEFORE FASHION", "Clearance, tyre size, ride height and usability are checked before chasing an aggressive look."],
-              ["04", "HANDOVER EXPLAINED", "Customers leave knowing what changed, how to care for it and what the next upgrade could be."],
-            ].map(([num, title, text]) => (
-              <article className="trust-card" key={num}>
-                <span>{num}</span><strong>{title}</strong><p>{text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="process-section" id="process">
-          <div className="section-heading">
-            <div>
-              <span className="section-code">07 // YOUR BUILD JOURNEY</span>
-              <h2>FROM IDEA TO <span>ROAD READY.</span></h2>
-            </div>
-            <p>A simple client-first process so customers understand what happens before a single part is fitted.</p>
-          </div>
-
-          <div className="swipe-shell content-swipe-shell">
-            <button className="swipe-arrow swipe-arrow-left" onClick={() => scrollRail(processRef, -1)} aria-label="Previous build step">‹</button>
-            <div className="process-grid" ref={processRef}>
-            {[
-              ["01", "DISCOVER", "Tell us your car, daily use, style, budget and what you want to improve."],
-              ["02", "PLAN", "We shortlist compatible parts, discuss fitment and build a clear staged recommendation."],
-              ["03", "INSTALL", "The workshop completes the approved upgrades with fitment checks throughout the job."],
-              ["04", "VERIFY", "Final inspection, road-ready checks and a handover explaining your new setup."],
-            ].map(([num, title, text]) => (
-              <button className="process-card" key={num} onClick={() => setToast(`${title} // ${text}`)}>
-                <span className="process-number">{num}</span>
-                <span className="process-line" />
-                <strong>{title}</strong>
+          <div className="capability-grid">
+            {WORKSHOP_CAPABILITIES.map(([num,title,tag,text,icon]) => (
+              <article className="premium-card" key={num}>
+                <div className="card-scan" />
+                <div className="premium-card-top"><span>{num}</span><b>{tag}</b></div>
+                <div className="premium-icon"><i>{icon}</i><span /></div>
+                <h3>{title}</h3>
                 <p>{text}</p>
-                <b>VIEW STEP ↗</b>
-              </button>
-            ))}
-                      </div>
-            <button className="swipe-arrow swipe-arrow-right" onClick={() => scrollRail(processRef, 1)} aria-label="Next build step">›</button>
-          </div>
-        </section>
-
-        <section className="client-section">
-          <div className="client-copy">
-            <span className="section-code">08 // BUILT AROUND THE OWNER</span>
-            <h2>WHAT CLIENTS <span>CAN EXPECT.</span></h2>
-            <p>Modification should feel exciting, not confusing. This workshop experience keeps choices understandable from the first conversation to final handover.</p>
-          </div>
-          <div className="client-points">
-            {[
-              ["FITMENT FIRST", "Parts are selected around the actual vehicle, wheel clearance and intended use."],
-              ["CLEAR OPTIONS", "Street, show and performance routes are explained before you commit."],
-              ["STAGED BUILDS", "Start with the essentials and add upgrades later instead of doing everything at once."],
-              ["VISUAL DIRECTION", "Colour, stance, wheels, aero and lighting are planned as one connected look."],
-              ["FINAL CHECK", "The vehicle gets a practical post-installation inspection before handover."],
-              ["AFTERCARE", "Customers receive guidance on maintenance, setup changes and future upgrade paths."],
-            ].map(([title, text], index) => (
-              <article className="client-point" key={title}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div><strong>{title}</strong><p>{text}</p></div>
+                <a href="#customize">EXPLORE SYSTEM <b>↗</b></a>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="faq-section">
-          <div className="section-heading compact">
-            <div>
-              <span className="section-code">09 // CLIENT QUESTIONS</span>
-              <h2>BEFORE YOU <span>MODIFY.</span></h2>
-            </div>
-            <p>Tap a question for a quick explanation of the workshop approach.</p>
+        <section className="upgrades section scroll-reveal" data-scroll-reveal id="gallery">
+          <div className="section-head">
+            <div><small>FEATURED MODIFICATIONS</small><h2>POPULAR <span>UPGRADES</span></h2></div>
+            <a href="#customize">VIEW ALL MODS →</a>
           </div>
-          <div className="faq-list">
-            {FAQS.slice(0, faqExpanded ? 12 : 5).map(([q, a], index) => (
-              <button className={faqOpen === index ? "faq-item open" : "faq-item"} key={q} onClick={() => setFaqOpen(faqOpen === index ? -1 : index)}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div><strong>{q}</strong><p>{a}</p></div>
-                <b>{faqOpen === index ? "−" : "+"}</b>
-              </button>
+          <div className="upgrade-grid">
+            {UPGRADES.map(([n,title,tag,price,icon]) => (
+              <article key={n}>
+                <div className="upgrade-head"><b>{n}</b><span><strong>{title}</strong><small>{tag}</small></span></div>
+                <div className="upgrade-visual"><i>{icon}</i><span className="tech-ring"/></div>
+                <p>FROM <strong>{price}</strong></p>
+                <button onClick={() => { selectCategory(title.includes("WHEEL") ? "wheels" : title.includes("BRAKE") ? "brakes" : title.includes("AERO") ? "aero" : title.includes("COIL") ? "suspension" : "lights"); document.querySelector("#customize")?.scrollIntoView({behavior:"smooth"}); }}>CUSTOMIZE →</button>
+              </article>
             ))}
           </div>
-          <button className="faq-load-more" onClick={() => { setFaqExpanded((value) => !value); setFaqOpen(-1); }}>
-            <span>{faqExpanded ? "SHOW FIRST 5" : "LOAD MORE QUESTIONS"}</span>
-            <strong>{faqExpanded ? "05 / 12" : "12 TOTAL"}</strong>
-            <b>{faqExpanded ? "↑" : "↓"}</b>
-          </button>
         </section>
 
-        <section className="contact-section" id="contact">
-          <div className="contact-tyre" aria-hidden="true">
-            <span />
+        <section className="ideas section">
+          <div className="ideas-copy">
+            <h2>TURN IDEAS<br/><span>INTO REALITY</span></h2>
+            <p>Explore real builds, custom styles and inspiration from our community.</p>
+            <a href="#gallery" className="gold-button">VIEW GALLERY →</a>
           </div>
+          <div className="gallery-mosaic premium-gallery-preview">
+            {GALLERY_IMAGES.slice(0,4).map((item, index) => (
+              <figure key={item.src} className={index === 0 ? "gallery-main gallery-image-card" : "gallery-detail gallery-image-card"}>
+                <img
+                  src={item.src}
+                  alt={item.title}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+                <div className="gallery-placeholder"><span>0{index + 1}</span><b>ADD YOUR BUILD IMAGE</b></div>
+                <figcaption><small>{item.tag}</small><strong>{item.title}</strong><i>↗</i></figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+
+        <section className="build-gallery section scroll-reveal" data-scroll-reveal id="build-gallery">
+          <div className="section-head">
+            <div><small>SELECTED PROJECTS</small><h2>BUILT TO BE <span>REMEMBERED.</span></h2></div>
+            <p className="section-lead">Replace these six image files later with your own workshop photography. The layout is already responsive and animated.</p>
+          </div>
+          <div className="build-gallery-grid">
+            {GALLERY_IMAGES.map((item, index) => (
+              <article key={item.src} className={`build-shot shot-${index + 1}`}>
+                <img src={item.src} alt={item.title} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                <div className="shot-placeholder"><b>0{index + 1}</b><span>YOUR PROJECT IMAGE</span></div>
+                <div className="shot-overlay">
+                  <small>{item.tag}</small>
+                  <strong>{item.title}</strong>
+                  <span>VIEW BUILD ↗</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="built section scroll-reveal" data-scroll-reveal id="about">
+          <div className="built-copy">
+            <small>PERFORMANCE · STYLE · PRECISION</small>
+            <h2>BUILT <span>DIFFERENT</span></h2>
+            <p>High quality components. Expert installation. A team that lives and breathes performance.</p>
+          </div>
+          <div className="built-points">
+            <div><i>⚙</i><strong>GENUINE PARTS</strong><small>Trusted brands only</small></div>
+            <div><i>⌁</i><strong>EXPERT FITMENT</strong><small>Vehicle-specific setup</small></div>
+            <div><i>▣</i><strong>NATIONWIDE SUPPORT</strong><small>We’ve got you covered</small></div>
+          </div>
+        </section>
+
+        <section className="craft-banner section scroll-reveal" data-scroll-reveal>
+          <div className="craft-number">01</div>
+          <div className="craft-copy">
+            <small>THE DRIVE MODS STANDARD</small>
+            <h2>DETAILS ARE NOT<br/><span>THE DETAIL.</span></h2>
+            <p>The complete build is the detail. Fitment, finish, stance and proportion have to work together.</p>
+          </div>
+          <div className="craft-specs">
+            <div><small>FITMENT</small><strong>MEASURED</strong><span>Wheel / tyre / clearance</span></div>
+            <div><small>FINISH</small><strong>COHESIVE</strong><span>Paint / carbon / tint</span></div>
+            <div><small>SETUP</small><strong>PURPOSEFUL</strong><span>Street / show / performance</span></div>
+          </div>
+        </section>
+
+        <section className="services section scroll-reveal" data-scroll-reveal id="services">
+          <div className="section-head">
+            <div><small>WORKSHOP SYSTEMS</small><h2>ONE GARAGE. <span>EVERY UPGRADE.</span></h2></div>
+          </div>
+          <div className="service-grid">
+            {SERVICES.map(([title,text],i) => <article key={title}><b>0{i+1}</b><h3>{title}</h3><p>{text}</p><span>EXPLORE →</span></article>)}
+          </div>
+        </section>
+
+        <section className="packages section" id="packages">
+          <div className="section-head">
+            <div><small>BUILD STARTERS</small><h2>CHOOSE YOUR <span>DIRECTION.</span></h2></div>
+          </div>
+          <div className="package-grid">
+            {PACKAGES.map(([name,tag,price,items],i) => (
+              <article key={name} className={i===1 ? "featured" : ""}>
+                <small>{tag}</small><h3>{name}</h3><strong>FROM {price}</strong>
+                {items.map(x => <p key={x}>✓ {x}</p>)}
+                <a href="#contact">PLAN THIS BUILD →</a>
+              </article>
+            ))}
+          </div>
+        </section>
+
+
+        <section className="journey section scroll-reveal" data-scroll-reveal>
+          <div className="section-head">
+            <div><small>FROM SCREEN TO STREET</small><h2>YOUR BUILD <span>JOURNEY.</span></h2></div>
+            <p className="section-lead">A clear process keeps an exciting modification project easy to understand.</p>
+          </div>
+          <div className="journey-grid">
+            {BUILD_STEPS.map(([num,title,text], index) => (
+              <article key={num}>
+                <div className="journey-node"><span>{num}</span><i /></div>
+                <small>PHASE {num}</small>
+                <h3>{title}</h3>
+                <p>{text}</p>
+                {index < BUILD_STEPS.length - 1 && <b className="journey-arrow">→</b>}
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="quote-banner section scroll-reveal" data-scroll-reveal>
+          <div className="quote-glow" />
           <div>
-            <span className="section-code">10 // START A BUILD</span>
-            <h2>
-              YOUR CAR.
-              <span>YOUR RULES.</span>
-            </h2>
-            <p>
-              Build a visual-first performance concept around wheels, stance, lighting,
-              sound and aero — with the 3D car staying at the centre of the experience.
-            </p>
-            <a
-              className="cta-button large"
-              href="https://wa.me/919876543210?text=Hi%20AUTO%2F%2FMODS%2C%20I%20want%20to%20build%20a%20custom%20car."
-              target="_blank"
-              rel="noreferrer"
-            >
-              TALK TO THE GARAGE <span>↗</span>
-            </a>
+            <small>BUILD CONSULTATION</small>
+            <h2>HAVE A CAR.<br/><span>HAVE A VISION?</span></h2>
           </div>
+          <p>Send the garage your current car and the look you want. Use your live configuration as the starting point for the conversation.</p>
+          <a className="gold-button" href="#contact">START YOUR BUILD <b>→</b></a>
+        </section>
+
+        <section className="faq section scroll-reveal" data-scroll-reveal>
+          <div className="section-head"><div><small>CLIENT QUESTIONS</small><h2>BEFORE YOU <span>MODIFY.</span></h2></div></div>
+          <div className="faq-list">
+            {FAQS.map(([q,a],i) => <button key={q} className={faqOpen===i ? "open" : ""} onClick={() => setFaqOpen(faqOpen===i ? -1 : i)}><b>0{i+1}</b><span><strong>{q}</strong><p>{a}</p></span><i>{faqOpen===i ? "−" : "+"}</i></button>)}
+          </div>
+        </section>
+
+        <section className="contact section" id="contact">
+          <small>START A BUILD</small>
+          <h2>YOUR CAR.<br/><span>YOUR RULES.</span></h2>
+          <p>Send us your vehicle, your goals and your budget. We’ll help turn the configurator concept into a practical modification plan.</p>
+          <a className="gold-button" href="https://wa.me/919876543210?text=Hi%20DRIVE%20MODS%2C%20I%20want%20to%20plan%20a%20custom%20build." target="_blank" rel="noreferrer">TALK TO THE GARAGE →</a>
         </section>
       </main>
 
+      <a
+        className="floating-whatsapp"
+        href="https://wa.me/919876543210?text=Hi%20DRIVE%20MODS%2C%20I%20want%20to%20plan%20a%20custom%20build."
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Chat with Drive Mods on WhatsApp"
+      >
+        <span>WA</span>
+        <div><small>BUILD SUPPORT</small><strong>WHATSAPP US</strong></div>
+        <i>↗</i>
+      </a>
+
       <footer>
-        <div className="brand-copy">
-          AUTO<span>//</span>MODS
-          <small>PERFORMANCE LAB</small>
-        </div>
-        <span>INTERACTIVE 3D AUTOMOTIVE EXPERIENCE</span>
-        <span>© 2026</span>
+        <div className="brand"><span className="brand-mark">⬡</span><span><strong>DRIVE MODS</strong><small>CUSTOMIZE BEYOND LIMITS</small></span></div>
+        <span>INTERACTIVE 3D AUTOMOTIVE EXPERIENCE</span><span>© 2026</span>
       </footer>
     </div>
   );
